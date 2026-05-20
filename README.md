@@ -4,7 +4,7 @@
 
 If you've ever opened a worker branch a week later to find it ahead of main by a number you didn't expect — and weren't sure which commits were already merged elsewhere — this is the protocol.
 
-I built it while developing [ORCA](#about-orca), a closed-source legal-AI drafting system. It's the third of five methodology pieces I'm publishing. The first two are [Russian Judge](https://github.com/moranbickel/russian-judge) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol).
+I built it while developing [ORCA](#about-orca), a closed-source legal-AI drafting system. It's the third of six methodology pieces I'm publishing. The first two are [Russian Judge](https://github.com/moranbickel/russian-judge) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol).
 
 ---
 
@@ -280,7 +280,7 @@ If you know of closer prior art, please open an issue — I'd genuinely like to 
 
 ## Related
 
-This is the third of five methodology pieces from building [ORCA](#about-orca):
+This is the third of six methodology pieces from building [ORCA](#about-orca):
 
 - **[Russian Judge](https://github.com/moranbickel/russian-judge)** — adversarial AI review with structured verdicts.
 - **[Three-Body Protocol](https://github.com/moranbickel/three-body-protocol)** — coordination across sessions in time.

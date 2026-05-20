@@ -19,6 +19,6 @@ Initial release.
 - `diagram.svg` — protocol topology diagram.
 
 ### Context
-Third of five methodology pieces from ORCA. Companion to [Russian Judge](https://github.com/moranbickel/russian-judge) (adversarial AI review) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol) (coordination across sessions in time). This piece addresses coordination across sessions in parallel.
+Third of six methodology pieces from ORCA. Companion to [Russian Judge](https://github.com/moranbickel/russian-judge) (adversarial AI review) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol) (coordination across sessions in time). This piece addresses coordination across sessions in parallel.
 
 [0.1.0]: https://github.com/moranbickel/peer-worker-convergence/releases/tag/v0.1.0
