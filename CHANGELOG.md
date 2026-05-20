@@ -4,6 +4,20 @@ All notable changes to Peer-Worker Convergence are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-05-20
+
+Sharpening pass after two outside reviews (prior reviewer + GPT 8.6/10) flagged three quality improvements.
+
+### Changed
+- README — added "What can go wrong" callout immediately after the precision-target side-branch worked example, naming the three failure modes (cherry-pick conflicts, SHA misidentification, intertwined commits) with pointer to `PROTOCOL.md` §Recovery. The side-branch flow is the architecturally novel piece and also where adoption friction is highest; surfacing the failure modes upstream of recovery is a tighter signal.
+- README — added a sharper "Don't use it when" criterion: fewer than two long-lived worker sessions for multiple days a week → plain feature branches plus discipline are cheaper. Makes the adoption-overkill threshold more forceful.
+- README — added a forward reference to the shared-file resolution playbook from the "Protocol, at a glance" section. Readers who already know they need conflict-resolution rules can scroll directly.
+
+### Unchanged
+- Failure-first lede (the 274-commit story) — kept per series voice consistency with [Russian Judge](https://github.com/moranbickel/russian-judge) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol).
+- α/β/γ Greek-letter rule labels — kept; reads abstract to readers without internal context.
+- Wholesale repositioning of the shared-file playbook — held; the playbook resolves conflicts that arise from the ceremony, so it needs to come after the ceremony explanation, not before.
+
 ## [0.1.0] — 2026-05-20
 
 Initial release.

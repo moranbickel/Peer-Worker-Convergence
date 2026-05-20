@@ -106,6 +106,8 @@ The Greek letters are just labels — α/β/γ keeps them from colliding with ot
 
 Every worker pulls from main on session start. Every worker pushes back through main on session end. Nothing commits directly to main. Workers never merge to each other — only through main. That last constraint is what keeps the graph from becoming a tangle.
 
+Workers will sometimes write to the same shared files (STATUS_NOW, DECISIONS_LOG, BACKLOG, generated indexes). Those conflicts have a deterministic resolution playbook — see [Shared files: resolution playbook](#shared-files-resolution-playbook) below.
+
 ---
 
 ## A worked example
@@ -188,6 +190,8 @@ Once installed as a script ([`templates/scripts/concurrent-beta.sh`](./templates
 
 The four operations — cherry-pick, push side-branch, ff-merge, push main — fit on one line of operator action. *Mechanically enforced, not remembered* applies to ceremony shape as well as ceremony trigger.
 
+**What can go wrong:** cherry-pick conflicts on shared files (especially STATUS_NOW), SHA misidentification across worker branches, intertwined commits that resist clean cherry-pick selection. See [`PROTOCOL.md`](./PROTOCOL.md) §Recovery for diagnostic and recovery procedures — the side-branch flow is the protocol's strongest move but also where adoption friction is highest.
+
 The full ceremony — bundle naming conventions, attestation discipline, verification step, recovery from a botched cherry-pick — is in [`PROTOCOL.md`](./PROTOCOL.md).
 
 ---
@@ -239,6 +243,7 @@ The pattern is the load-bearing insight: **ceremony you mechanically can't skip 
 - Short-lived feature branches — they merge and die; no convergence ceremony needed
 - Standard team workflow with code review — PRs ARE the convergence ceremony for that model
 - You only have one operator and one chat window — the failure mode this prevents doesn't trigger
+- You are running fewer than two long-lived worker sessions for multiple days a week — plain feature branches plus discipline are cheaper than this protocol
 
 The gate isn't "are you using AI?" It's "do you have N long-lived branches with a single operator's attention divided across them?" If yes, you have the convergence problem. If no, you don't.
 
