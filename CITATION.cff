@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this protocol or build on it, please cite it as below."
+title: "Peer-Worker Convergence: a protocol for running multiple AI coding sessions on one repo without divergence"
+abstract: "A coordination protocol for running multiple AI coding sessions on a shared git repository, with long-lived worker branches converging through a canonical main via session-start and session-end ceremonies (α/β/γ rules) and a precision-target side-branch ceremony for concurrent convergence."
+authors:
+  - family-names: Bickel
+    given-names: Moran
+repository-code: "https://github.com/moranbickel/peer-worker-convergence"
+url: "https://github.com/moranbickel/peer-worker-convergence"
+license: CC-BY-4.0
+version: "0.1.0"
+date-released: 2026-05-20
+keywords:
+  - ai-collaboration
+  - git-workflow
+  - methodology
+  - multi-agent
+  - claude-code
+  - branch-convergence
+  - session-coordination

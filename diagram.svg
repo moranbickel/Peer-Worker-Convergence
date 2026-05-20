@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" font-family="monospace" font-size="14">
+  <!-- worker boxes -->
+  <g stroke="#333" stroke-width="2" fill="#fff">
+    <rect x="60"  y="60" width="160" height="60" rx="4"/>
+    <rect x="320" y="60" width="160" height="60" rx="4"/>
+    <rect x="580" y="60" width="160" height="60" rx="4"/>
+  </g>
+
+  <g text-anchor="middle">
+    <text x="140" y="85">worker1</text>
+    <text x="140" y="105" fill="#666">(branch)</text>
+    <text x="400" y="85">worker2</text>
+    <text x="400" y="105" fill="#666">(branch)</text>
+    <text x="660" y="85">worker3</text>
+    <text x="660" y="105" fill="#666">(branch)</text>
+  </g>
+
+  <!-- vertical lines down from each worker -->
+  <g stroke="#333" stroke-width="2" fill="none">
+    <line x1="140" y1="120" x2="140" y2="240"/>
+    <line x1="400" y1="120" x2="400" y2="240"/>
+    <line x1="660" y1="120" x2="660" y2="240"/>
+  </g>
+
+  <!-- α/β labels next to each vertical line -->
+  <g text-anchor="start" font-size="12" fill="#444">
+    <text x="150" y="155">α: pull</text>
+    <text x="150" y="175">β: push merge</text>
+    <text x="410" y="155">α: pull</text>
+    <text x="410" y="175">β: push merge</text>
+    <text x="670" y="155">α: pull</text>
+    <text x="670" y="175">β: push merge</text>
+  </g>
+
+  <!-- horizontal converging line -->
+  <line x1="140" y1="240" x2="660" y2="240" stroke="#333" stroke-width="2"/>
+
+  <!-- vertical arrow down to origin/main -->
+  <line x1="400" y1="240" x2="400" y2="315" stroke="#333" stroke-width="2"/>
+  <polygon points="392,310 408,310 400,326" fill="#333"/>
+
+  <!-- origin/main box -->
+  <rect x="240" y="335" width="320" height="80" rx="4" stroke="#333" stroke-width="2" fill="#fafafa"/>
+  <g text-anchor="middle">
+    <text x="400" y="365" font-weight="bold">origin/main</text>
+    <text x="400" y="390" font-size="12" fill="#666">(canonical, γ-protected)</text>
+  </g>
+
+  <!-- caption -->
+  <text x="400" y="465" text-anchor="middle" font-size="12" fill="#888">
+    Peer-Worker Convergence: N workers, peer topology, convergence through canonical.
+  </text>
+</svg>
