@@ -4,13 +4,13 @@
 
 If you've ever opened a worker branch a week later to find it ahead of main by a number you didn't expect — and weren't sure which commits were already merged elsewhere — this is the protocol.
 
-I built it while developing [ORCA](#about-orca), a closed-source legal-AI drafting system. It's the third of six methodology pieces I'm publishing. The first two are [Russian Judge](https://github.com/moranbickel/russian-judge) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol).
+I built it while developing [ORCA](#about-orca), an AI legal reasoning system for Israeli civil litigation. It's the third of six methodology pieces I'm publishing. The first two are [Russian Judge](https://github.com/moranbickel/russian-judge) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol).
 
 ---
 
 ## The failure it solves
 
-I was running three concurrent Claude Code sessions for several weeks. Each one had its own git worktree, its own long-lived branch, and its own slice of the work. The plan was that they'd each push to their own branch and we'd periodically converge through `main`.
+I had three git worktrees running in parallel for several weeks, each with a Claude Code session attached. Each worktree had its own long-lived branch and its own slice of the work. The plan was that they'd each push to their own branch and we'd periodically converge through `main`.
 
 The plan didn't survive contact with reality.
 
@@ -296,7 +296,7 @@ This is the third of six methodology pieces from building [ORCA](#about-orca):
 
 ## About ORCA
 
-ORCA is a closed-source legal-AI drafting system I'm developing for Israeli civil litigation workflows. This repo publishes the coordination methodology, not ORCA's product internals — no source code, knowledge bases, prompts, customer data, or implementation roadmap. The methodology is open; ORCA is not.
+ORCA — Orchestrated Reasoning for Civil Action — is an AI legal reasoning system I'm building for Israeli civil litigation. The system is closed-source; the methodology that produced it is open. This repo publishes the coordination methodology, not ORCA's product internals — no source code, knowledge bases, prompts, customer data, or implementation roadmap.
 
 See my [GitHub profile](https://github.com/moranbickel) for the full body of work and how to follow ORCA's progress.
 

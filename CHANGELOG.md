@@ -4,6 +4,14 @@ All notable changes to Peer-Worker Convergence are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] — 2026-05-20
+
+Terminology corrections post-publication.
+
+### Changed
+- README — ORCA definition aligned with canonical (per moranbickel profile): "AI legal reasoning system" instead of "legal-AI drafting system"; added "Orchestrated Reasoning for Civil Action" acronym expansion in About section; dropped "workflows" suffix from "Israeli civil litigation."
+- README — softened the failure-story opening ("I was running three concurrent Claude Code sessions for several weeks") to describe the technical reality more precisely: "I had three git worktrees running in parallel for several weeks, each with a Claude Code session attached." Same factual ground, less alarming framing.
+
 ## [0.1.1] — 2026-05-20
 
 Sharpening pass after two outside reviews (prior reviewer + GPT 8.6/10) flagged three quality improvements.
