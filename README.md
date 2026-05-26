@@ -291,6 +291,7 @@ This is one of a series of methodology pieces from building [ORCA](#about-orca):
 - **[Three-Body Protocol](https://github.com/moranbickel/three-body-protocol)** — coordination across sessions in time.
 - **Peer-Worker Convergence** — *this repo.* Coordination across sessions in parallel.
 - **[CSAE](https://github.com/moranbickel/csae)** — attestation chains for AI-generated commits.
+- **[Pre-IMPL Forensic Discipline](https://github.com/moranbickel/Pre-IMPL-Forensic-Discipline)** — catching wrong premises before they become wrong commits (v0.1 draft).
 
 More pieces as they're written.
 
