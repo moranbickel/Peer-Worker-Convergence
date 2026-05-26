@@ -110,9 +110,11 @@ git merge --ff-only workerN/main
 git push origin main
 
 # 5. Verify convergence
-git rev-list --count origin/workerN/main..origin/main
-# Expected: 0 or positive (main caught up or moved ahead).
-# Failure mode: workerN/main ahead of main means β didn't land.
+git rev-list --count origin/main..origin/workerN/main
+# Expected: 0 (every workerN/main commit is now reachable from main).
+# Failure mode: a positive count means workerN/main has commits main lacks -- β didn't land.
+# (Note the direction: A..B counts commits on B not on A. We want "nothing on the
+#  worker that main is missing," which is origin/main..origin/workerN/main == 0.)
 ```
 
 If step 3 fails (`merge --ff-only` rejects because main has commits not in `workerN/main`), the world has changed under you — another worker β-merged while you were preparing. Switch to β.2.
@@ -173,7 +175,7 @@ Files written by multiple workers need a deterministic resolution rule. Improvis
 
 | File class | Resolution | Why |
 |---|---|---|
-| **Living state** (e.g. STATUS_NOW) | Newest-by-mtime wins. Binary choice. | The file represents a snapshot of *now*. The newer snapshot is, by definition, more accurate. Hybridizing two snapshots produces a fictional state that was never true at any point. |
+| **Living state** (e.g. STATUS_NOW) | Newest wins — binary choice, never hybridize. Decide "newest" by the **conflicting commit's timestamp** (`git log -1 --format=%cI <ref> -- STATUS_NOW.md`) or the file's own **`Last updated:`** field — **not** filesystem mtime. | The file represents a snapshot of *now*. The newer snapshot is, by definition, more accurate; hybridizing two snapshots produces a fictional state that was never true at any point. Filesystem mtime is not deterministic here — git does not preserve it across clones (a fresh checkout stamps every file at clone time), so the commit timestamp or an in-file authored timestamp is the reliable signal. |
 | **Append-only** (e.g. DECISIONS_LOG) | Both sides' new entries; sort by timestamp. | The file is a log. Logs append; conflict resolution that drops one side's entries silently loses decisions. Timestamp sort produces a chronologically correct merged log. |
 | **Structured ID-keyed** (e.g. BACKLOG) | Hand-merge by ID-keyed section. **Never `git merge-file --union`.** | Union-merging interleaves lines, corrupting ID-keyed structure. The file becomes syntactically valid but semantically wrong. See the worked example below. |
 | **Auto-generated index** | Discard both sides; regenerate from current canonical inputs. | An index is a derived artifact. If the inputs are clean, regenerating produces the correct index. Merging two stale indices is wasted effort. |
