@@ -14,7 +14,7 @@ Terminology corrections post-publication.
 
 ## [0.1.1] — 2026-05-20
 
-Sharpening pass after two outside reviews (prior reviewer + GPT 8.6/10) flagged three quality improvements.
+Sharpening pass after two outside reviews flagged three quality improvements.
 
 ### Changed
 - README — added "What can go wrong" callout immediately after the precision-target side-branch worked example, naming the three failure modes (cherry-pick conflicts, SHA misidentification, intertwined commits) with pointer to `PROTOCOL.md` §Recovery. The side-branch flow is the architecturally novel piece and also where adoption friction is highest; surfacing the failure modes upstream of recovery is a tighter signal.
