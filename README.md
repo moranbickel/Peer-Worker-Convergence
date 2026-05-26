@@ -139,7 +139,7 @@ git push origin main                   # canonical published
 
 **Evening — worker2 session end (β):**
 
-worker2 fetches origin and discovers `main` is ahead by worker1's commits. It pulls them in (merge, not ff-only, because worker2 also has local commits). Conflict on `STATUS_NOW.md` — both workers updated it. Resolution per the shared-file playbook: newest-by-mtime wins (not hybrid). Conflict resolved, worker2 finishes its β.
+worker2 fetches origin and discovers `main` is ahead by worker1's commits. It pulls them in (merge, not ff-only, because worker2 also has local commits). Conflict on `STATUS_NOW.md` — both workers updated it. Resolution per the shared-file playbook: newest wins (by commit timestamp or the file's `Last updated:` field, not filesystem mtime), not a hybrid. Conflict resolved, worker2 finishes its β.
 
 By morning the next day, all three artifacts (`origin/main`, `origin/worker1/main`, `origin/worker2/main`) agree. No drift. No 274-commit surprise.
 
@@ -202,7 +202,7 @@ Some files are written by every worker but only canonically valid on main. Each 
 
 | File class | Resolution |
 |---|---|
-| Living state (e.g. STATUS_NOW) | Newest-by-mtime wins. Binary choice. Don't try to hybrid. |
+| Living state (e.g. STATUS_NOW) | Newest wins — binary choice, don't hybridize. "Newest" = the conflicting commit's timestamp or the file's own `Last updated:` field, **not** filesystem mtime (git doesn't preserve mtime across clones). |
 | Append-only (e.g. DECISIONS_LOG) | Both sides' new entries; sort by timestamp. |
 | Structured ID-keyed (e.g. BACKLOG) | Hand-merge by ID-keyed section. Never `git merge-file --union` — corrupts ID structure. |
 | Auto-generated index | Discard both sides; regenerate from current canonical inputs. |
@@ -254,7 +254,7 @@ The gate isn't "are you using AI?" It's "do you have N long-lived branches with 
 1. **Decide on worker topology.** How many concurrent sessions do you actually run? Peer-worker pays off at N ≥ 2, sustained. Below that, this is overkill.
 2. **Set up worker worktrees.** `git worktree add /path/to/worker1 -b worker1/main origin/main` for each. Worker directory names and branch names follow a convention so a hook can enforce them.
 3. **Adopt the three rules.** Drop the α/β/γ checklist from [`templates/ceremony-checklist.md`](./templates/ceremony-checklist.md) into your equivalent of STATUS_NOW or a session-start prompt.
-4. **Install the tripwires.** Three scripts in [`templates/hooks/`](./templates/hooks/). They're small. Skim them, adapt the threshold, install.
+4. **Install the tripwires.** Three scripts in [`templates/hooks/`](./templates/hooks/). They're small. Skim them, adapt the threshold, install. For the γ-enforcer (`no-direct-main-commits.sh`), also `touch .canonical-clone` at the canonical clone's root — that marker is what arms the hook; without it the hook silently no-ops and direct commits to main go through.
 5. **Document the shared files.** List the files multiple workers will write. For each, write down the resolution rule (per the table above). Put the list at the top of your DECISIONS_LOG so every fresh session sees it.
 
 The setup is 30 minutes. The discipline takes longer to internalize. The first time you forget β at session-end, you'll feel the ceremony tax. The third time you cherry-pick correctly under a concurrent collision, the side-branch dance will feel automatic. That's the honest curve — fast to install, slower to make second nature.
