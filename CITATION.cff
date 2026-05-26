@@ -8,7 +8,7 @@ authors:
 repository-code: "https://github.com/moranbickel/peer-worker-convergence"
 url: "https://github.com/moranbickel/peer-worker-convergence"
 license: CC-BY-4.0
-version: "0.1.0"
+version: "0.1.2"
 date-released: 2026-05-20
 keywords:
   - ai-collaboration
