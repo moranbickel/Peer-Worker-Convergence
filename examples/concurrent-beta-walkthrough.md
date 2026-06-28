@@ -33,7 +33,7 @@ This walkthrough shows: both workers running α at session start, both workers c
 | 15:05 | — | β.1 — `git push origin worker2/main` ✓ |
 | 15:06 | — | canonical-clone: `git merge --ff-only worker2/main` **fails** — not fast-forwardable. |
 
-This is the moment. The world changed under worker2's β.1 — worker1 landed first, main moved, worker2's β.1 can't ff-merge anymore.
+This is the moment. The world changed under worker2's β.1: worker1 landed first, main moved, worker2's β.1 can't ff-merge anymore.
 
 worker2 doesn't panic-merge. It switches to β.2.
 
@@ -72,7 +72,7 @@ for sha in $COMMITS; do
 done
 ```
 
-The first cherry-pick (`abc1234` — worker2's STATUS_NOW update) conflicts. worker1 didn't touch STATUS_NOW, but worker2 updated it based on yesterday's main; the current main has a STATUS_NOW update from elsewhere (the previous session's β-merge that worker2 didn't see).
+The first cherry-pick (`abc1234`, worker2's STATUS_NOW update) conflicts. worker1 didn't touch STATUS_NOW, but worker2 updated it based on yesterday's main; the current main has a STATUS_NOW update from elsewhere (the previous session's β-merge that worker2 didn't see).
 
 `git status`:
 ```
@@ -91,7 +91,7 @@ git add docs/STATUS_NOW.md
 git cherry-pick --continue
 ```
 
-The remaining four commits cherry-pick cleanly — they touch DECISIONS_LOG (append-only) and architecture docs that worker1 didn't touch.
+The remaining four commits cherry-pick cleanly: they touch DECISIONS_LOG (append-only) and architecture docs that worker1 didn't touch.
 
 ```bash
 # Step 4: push the side-branch
@@ -136,7 +136,7 @@ origin/main:
   └── (earlier commits)
 ```
 
-Both workers' scopes are exact. No attribution blur — every commit is reachable from main via either the worker1 fast-forward range or the worker2 side-branch merge. A reader of `git log` can reconstruct who shipped what.
+Both workers' scopes are exact. No attribution blur: every commit is reachable from main via either the worker1 fast-forward range or the worker2 side-branch merge. A reader of `git log` can reconstruct who shipped what.
 
 Verification across all workers:
 
@@ -162,15 +162,15 @@ All four checks pass. Convergence complete.
 
 Four moves in this walkthrough are worth calling out because they're easy to get wrong:
 
-**1. worker2 didn't panic when β.1 failed.** The fast-path failure was the signal to switch ceremonies, not the signal to force-merge. β.1 → β.2 fallback is a *feature*, not an error.
+**1. worker2 didn't panic when β.1 failed.** The fast-path failure was the signal to switch ceremonies, not the signal to force-merge. The β.1 → β.2 fallback is intended behavior.
 
-**2. The cherry-pick range was computed against *current* `origin/main`, not yesterday's.** `git log origin/main..worker2/main` re-reads main as it exists right now — which includes worker1's commits. A stale cached range would have shipped wrong.
+**2. The cherry-pick range was computed against *current* `origin/main`, not yesterday's.** `git log origin/main..worker2/main` re-reads main as it exists right now, which includes worker1's commits. A stale cached range would have shipped wrong.
 
-**3. The side-branch was rooted at `origin/main`, not at `worker2/main`.** If worker2 had used `git checkout -b worker2-bundle worker2/main`, the side-branch would have inherited worker2's stale base — and the final merge to main wouldn't ff-only cleanly. Rooting at canonical is what makes the bundle scope-exact.
+**3. The side-branch was rooted at `origin/main`, not at `worker2/main`.** If worker2 had used `git checkout -b worker2-bundle worker2/main`, the side-branch would have inherited worker2's stale base, and the final merge to main wouldn't ff-only cleanly. Rooting at canonical is what makes the bundle scope-exact.
 
 **4. STATUS_NOW resolution was *binary*, not hybrid.** worker2 took its own version (newer-by-mtime). It did not try to merge worker2's intent with the main-era content. The playbook is binary because hybrid resolutions produce fictional state.
 
-The whole ceremony — including the conflict — took about three minutes. The 274-commit recovery would have taken hours.
+The whole ceremony, including the conflict, took about three minutes. The 274-commit recovery would have taken hours.
 
 ---
 
@@ -186,7 +186,7 @@ The walkthrough has worker1 finishing β about three minutes before worker2 star
 
 The "race" reduces to one worker doing β.2 against an origin that briefly was something else. There's no scenario where both pushes succeed; the canonical artifact's fast-forward property prevents it.
 
-The shared-worktree race problem (two sessions on one worker tree) is a different failure mode — that one isn't prevented by atomic remote operations. See [`PROTOCOL.md`](../PROTOCOL.md) §"The shared-worktree race problem".
+The shared-worktree race problem (two sessions on one worker tree) is a different failure mode: that one isn't prevented by atomic remote operations. See [`PROTOCOL.md`](../PROTOCOL.md) §"The shared-worktree race problem".
 
 ---
 
