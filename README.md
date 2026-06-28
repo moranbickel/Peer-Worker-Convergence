@@ -1,79 +1,75 @@
 # Peer-Worker Convergence
 
-**A protocol for running multiple AI coding sessions on one repo without divergence.** Names the architectural problem that emerges when you have N concurrent Claude Code sessions (or equivalent — Cursor sessions, Copilot agents, multi-IDE workflows) committing to long-lived worker branches alongside a canonical main, and gives you the rules and ceremonies that keep those branches converging instead of drifting.
+**A protocol for running several AI coding sessions on one repository without their branches drifting apart.** If you run multiple Claude Code sessions (or Cursor, Copilot, or any mix) on long-lived branches alongside a shared `main`, this gives you the rules and the start/end routine that keep those branches in sync instead of slowly diverging.
 
-If you've ever opened a worker branch a week later to find it ahead of main by a number you didn't expect — and weren't sure which commits were already merged elsewhere — this is the protocol.
+If you've ever opened a branch a week later, found it surprisingly far ahead of `main`, and weren't sure which of its commits had already been merged somewhere else, this is for you.
 
-I built it while developing [ORCA](#about-orca), an AI legal reasoning system for Israeli civil litigation. It's part of a series of methodology pieces I'm publishing from that work, alongside [Russian Judge](https://github.com/moranbickel/russian-judge) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol).
+I built it while developing [ORCA](#about-orca), an AI legal reasoning system for Israeli civil litigation. It's one of a series of methodology pieces I'm publishing from that work, alongside [Russian Judge](https://github.com/moranbickel/russian-judge) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol).
 
 ---
 
 ## The failure it solves
 
-I had three git worktrees running in parallel for several weeks, each with a Claude Code session attached. Each worktree had its own long-lived branch and its own slice of the work. The plan was that they'd each push to their own branch and we'd periodically converge through `main`.
+I had three git worktrees running in parallel for several weeks, each with a Claude Code session attached. Each had its own long-lived branch and its own slice of the work. The plan was simple: each one pushes to its own branch, and we converge through `main` from time to time.
 
 The plan didn't survive contact with reality.
 
-One evening I went to check a worker I hadn't actively driven in about two weeks. I expected it to be five, maybe ten commits ahead of `main`. It was **274 commits ahead.**
+One evening I checked a worker I hadn't driven in about two weeks. I expected it to be five, maybe ten commits ahead of `main`. It was **274 commits ahead.**
 
-Nothing was broken. The worker had been doing real work, shipping real commits, with the operator (me) closing the loop. But "converge periodically through main" turned out to mean "converge when I remember to." And without a hard ceremony, I didn't remember to. The branch drifted. The other two workers drifted in their own directions. By the time I noticed, reconciling them was a multi-hour exercise of cherry-picks, conflict resolution on shared files, and forensic git-log reading.
+Nothing was broken. The worker had been doing real work and shipping real commits, with me closing the loop each time. But "converge from time to time" really meant "converge when I remember to," and without a fixed trigger, I didn't remember to. That branch drifted. The other two drifted in their own directions. By the time I noticed, putting them back together took hours of cherry-picks, conflict resolution on shared files, and reading git history line by line.
 
-That was the moment I realized:
-
-**Multi-session AI workflows have a convergence problem, and it isn't solved by "merge often."** "Often" is a vibe. What you need is a ceremony with a definite trigger — a thing that happens at the start and end of every session, mechanically, whether you remember it or not.
-
-Peer-Worker Convergence is that ceremony.
+The lesson: multi-session AI work has a convergence problem, and "merge often" doesn't fix it. "Often" depends on remembering, and remembering is the part that fails. What works is a fixed routine tied to a specific moment: the same steps at the start and end of every session, every time, whether or not you feel like it. Peer-Worker Convergence is that routine.
 
 ---
 
-## Three-Body and Peer-Worker — sibling pieces
+## Three-Body and Peer-Worker: sibling pieces
 
-[Three-Body Protocol](https://github.com/moranbickel/three-body-protocol) addresses coordination *across sessions in time* — how the thinking AI, the implementing AI, and you stay aligned across days and weeks via STATUS_NOW and DECISIONS_LOG.
+[Three-Body Protocol](https://github.com/moranbickel/three-body-protocol) covers coordination *across time*: how the thinking AI, the implementing AI, and you stay aligned across days and weeks, through files like STATUS_NOW and DECISIONS_LOG.
 
-Peer-Worker Convergence addresses coordination *across sessions in parallel* — how N concurrent worker branches stay aligned with main and with each other during the same operating week.
+Peer-Worker Convergence covers coordination *across parallel sessions*: how several worker branches stay in sync with `main`, and with each other, during the same working week.
 
-Three-Body's bridge files are among the shared files this protocol's convergence ceremony has to handle. The two pieces compose.
+The two fit together. Three-Body's bridge files are some of the shared files this protocol's convergence routine has to merge.
 
 ---
 
 ## What this protocol is not
 
-Peer-Worker is **not** a substitute for short-lived feature branches and PRs. If you're working solo, on a single session, with each branch living for one feature and dying after merge — your existing GitHub workflow already converges things. This protocol is for the case where worker branches are *spaces*, not *features*: long-lived, multi-task, parallel to other workers, and merging through main as a continuous discipline rather than a per-feature event.
+It is **not** a replacement for short-lived feature branches and pull requests. If you work solo, one session at a time, with each branch living for a single feature and dying after merge, your normal GitHub workflow already keeps things converged. This protocol is for a different case: branches that are *workspaces*, not *features*. They live a long time, hold many tasks, run in parallel with other workers, and merge through `main` continuously rather than once per feature.
 
-It's also not the same architectural shape as native multi-agent platforms. Anthropic's [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams) (April 2026) coordinates *one team under one operator*, where agents share a planning context and the platform handles intra-team handoff. That's the right tool when the work decomposes cleanly within a single thinking context.
+It is also a different shape from native multi-agent platforms. Anthropic's [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams) (April 2026) coordinates *one team under one operator*, where the agents share a planning context and the platform handles handoff between them. That's the right tool when the work splits cleanly inside a single thinking context.
 
-Peer-Worker addresses a different topology: *one operator running N independent sessions*, each with its own thinking context, converging through git rather than through shared prompt state. Two reasons you'd want this:
+Peer-Worker is for a different setup: *one operator running several independent sessions*, each with its own context, converging through git rather than through shared prompt state. You'd want this for two reasons:
 
-- **Different contexts matter.** A session pre-loaded with strategic / discipline / status context thinks differently from a session pre-loaded with focused implementation context. You want both, and you don't want to recompose them every prompt.
-- **Asymmetric attention.** When one session is mid-flight on a hard problem, you don't want the others paused. Independent sessions let you context-switch at the operator level — fluid attention across N work surfaces, each making progress in parallel.
+- **Different contexts matter.** A session loaded with strategy and status context thinks differently from one loaded with focused implementation context. You want both, and you don't want to rebuild them on every prompt.
+- **Attention shifts.** When one session is deep in a hard problem, you don't want the others to pause. Independent sessions let you move your attention between several work surfaces while each keeps making progress.
 
-If your work has a single coherent decomposition, Agent Teams is the cleaner shape. If your work has multiple parallel contexts with independent cadences, peer-worker is the shape that survives the operator-attention reality.
+If your work has a single clean breakdown, Agent Teams is the simpler choice. If it has several parallel threads running at their own pace, Peer-Worker is the shape that holds up.
 
-And finally it's **not** a complete solution. It addresses the convergence ceremony. It does not address how to design work across workers (that's [Three-Body](https://github.com/moranbickel/three-body-protocol)), how to review the work each worker produces (that's [Russian Judge](https://github.com/moranbickel/russian-judge)), or how to attest the work as AI-generated (CSAE, planned). Even the coordination it does cover, it covers unevenly: convergence and attribution fully, but [scope collision](#scope-collision-the-third-axis) — two workers independently doing the same work — only asymmetrically (it prevents the already-landed redo, not the in-flight case). It's a load-bearing piece, not the whole structure.
+Finally, it is **not** a complete solution. It handles convergence. It does not handle how to divide work across workers (that's [Three-Body](https://github.com/moranbickel/three-body-protocol)), how to review what each worker produces (that's [Russian Judge](https://github.com/moranbickel/russian-judge)), or how to attest the work as AI-generated (CSAE, planned). It doesn't even cover all of coordination: it handles convergence and attribution fully, but [scope collision](#scope-collision-the-third-axis) (two workers unknowingly doing the same task) only partly. It catches the already-finished case, not the in-flight one. Think of it as one load-bearing piece, not the whole structure.
 
 ---
 
-## Peer-Worker vs alternatives
+## Peer-Worker vs. alternatives
 
 | Dimension | Ad-hoc multi-session | Canonical worker | Peer-Worker Convergence |
 |---|---|---|---|
 | Workers | Equal, no rules | One primary, others temporary | Equal, peer topology |
-| Convergence trigger | "When you remember" | Through the canonical | Session start + session end ceremony |
+| Convergence trigger | "When you remember" | Through the canonical | Session start + session end routine |
 | Failure mode | Drift compounds silently | Canonical becomes bottleneck | Documented anti-patterns; trip-wired |
 | Concurrent commits to main | Implicit, race-prone | Canonical-only | Explicitly forbidden (γ rule) |
 | Shared-file conflicts | Hand-resolved each time | Avoided by single writer | Resolution playbook per file class |
 | Long-lived worker branches | Yes, fragile | No | Yes, by design |
 | Best for | Solo + occasional multi-session | One human juggling 1-2 sessions | 2+ persistent concurrent sessions |
 
-The middle column (canonical worker) is what most people do first, and what most teams settle on if the workload is light. Peer topology pays off when you're routinely running 2-3 concurrent sessions for multiple days at a stretch.
+The middle column (one canonical worker that the others sync to) is what most people try first, and it's fine when the workload is light. Peer topology earns its keep once you're routinely running two or three sessions at once for days at a stretch.
 
 ---
 
 ## The protocol, at a glance
 
-Three rules. Two ceremonies. One canonical artifact.
+Three rules, two ceremony shapes, one canonical artifact.
 
-**The canonical artifact:** `main` on origin. It is the single source of truth. Nothing else is.
+**The canonical artifact** is `main` on origin. It is the single source of truth. Nothing else is.
 
 **The three rules:**
 
@@ -83,7 +79,7 @@ Three rules. Two ceremonies. One canonical artifact.
 γ  (forever)         Never commit directly to main.
 ```
 
-The Greek letters are just labels — α/β/γ keeps them from colliding with other rule numbering in your project. Call them what you want.
+The Greek letters are just labels, so they don't collide with other rule numbering in your project. Call them whatever you like.
 
 **Diagram:**
 
@@ -104,17 +100,17 @@ The Greek letters are just labels — α/β/γ keeps them from colliding with ot
                 └──────────────────────────────┘
 ```
 
-Every worker pulls from main on session start. Every worker pushes back through main on session end. Nothing commits directly to main. Workers never merge to each other — only through main. That last constraint is what keeps the graph from becoming a tangle.
+Every worker pulls from `main` at session start and pushes back through `main` at session end. Nothing commits straight to `main`. Workers never merge into each other; they only meet through `main`. That last rule is what keeps the history from turning into a tangle.
 
-Workers will sometimes write to the same shared files (STATUS_NOW, DECISIONS_LOG, BACKLOG, generated indexes). Those conflicts have a deterministic resolution playbook — see [Shared files: resolution playbook](#shared-files-resolution-playbook) below.
+Workers will sometimes write to the same shared files (STATUS_NOW, DECISIONS_LOG, BACKLOG, generated indexes). Those conflicts have a fixed resolution playbook. See [Shared files: resolution playbook](#shared-files-resolution-playbook) below.
 
 ---
 
 ## A worked example
 
-Suppose I'm running two concurrent sessions today. `worker1` is working on schema changes. `worker2` is working on documentation. They share `docs/STATUS_NOW.md` and `docs/DECISIONS_LOG.md`.
+Say I'm running two sessions today. `worker1` is doing schema changes. `worker2` is doing documentation. They both touch `docs/STATUS_NOW.md` and `docs/DECISIONS_LOG.md`.
 
-**Morning — worker1 session start (α):**
+**Morning, worker1 session start (α):**
 
 ```bash
 cd /repo/worker1
@@ -122,11 +118,11 @@ git fetch origin
 git merge --ff-only origin/main
 ```
 
-The ff-only succeeds because worker1 has no unique unmerged commits since the last convergence. The worker is now in sync with main.
+The fast-forward succeeds because worker1 has no unmerged commits since the last convergence. The worker is now in sync with `main`.
 
-**Mid-day — both workers commit independently to their own branches.** No conflict yet, because neither has pushed.
+**Mid-day:** both workers commit to their own branches. No conflict yet, because neither has pushed.
 
-**Late afternoon — worker1 session end (β):**
+**Late afternoon, worker1 session end (β):**
 
 ```bash
 cd /repo/worker1
@@ -137,25 +133,25 @@ git merge --ff-only worker1/main       # main now ahead by worker1's commits
 git push origin main                   # canonical published
 ```
 
-**Evening — worker2 session end (β):**
+**Evening, worker2 session end (β):**
 
-worker2 fetches origin and discovers `main` is ahead by worker1's commits. It pulls them in (merge, not ff-only, because worker2 also has local commits). Conflict on `STATUS_NOW.md` — both workers updated it. Resolution per the shared-file playbook: newest wins (by commit timestamp or the file's `Last updated:` field, not filesystem mtime), not a hybrid. Conflict resolved, worker2 finishes its β.
+worker2 fetches origin and finds that `main` is now ahead by worker1's commits. It pulls them in (a merge, not a fast-forward, because worker2 also has local commits). There's a conflict on `STATUS_NOW.md`: both workers edited it. The playbook says newest wins (by commit timestamp or the file's own `Last updated:` field, not filesystem mtime), with no hybrid. worker2 resolves it and finishes its β.
 
-By morning the next day, all three artifacts (`origin/main`, `origin/worker1/main`, `origin/worker2/main`) agree. No drift. No 274-commit surprise.
+By the next morning, all three (`origin/main`, `origin/worker1/main`, `origin/worker2/main`) agree. No drift. No 274-commit surprise.
 
-The whole ceremony adds maybe two minutes per session boundary. The cost of skipping it is unbounded.
+The whole routine adds maybe two minutes per session boundary. Skipping it can cost hours.
 
 ---
 
 ## Concurrent-aware β: the precision-target side-branch
 
-The simple ceremony assumes one worker β-merges at a time. When two workers are mid-flight and both want to β at roughly the same time, the simple shape has a failure mode: worker1's β can sweep in worker2's already-pushed-but-not-yet-merged commits under worker1's bundle, blurring attribution.
+The simple routine assumes one worker merges at a time. When two workers finish at roughly the same moment, it has a weak spot: worker1's merge can sweep in worker2's already-pushed-but-not-yet-merged commits, so it's no longer clear which worker shipped what.
 
-This is the architecturally novel part of the protocol. The fix is a small but specific git move: **don't merge worker1/main directly into main.** Instead, cherry-pick worker1's specific commits onto a fresh side-branch *created from `origin/main`*, push the side-branch, then merge the side-branch into main.
+This is the part of the protocol that's genuinely novel, and it's one small, specific git move: **don't merge worker1/main straight into main.** Instead, cherry-pick worker1's exact commits onto a fresh side-branch *created from `origin/main`*, push that side-branch, and merge it into `main`.
 
-The side-branch contains *only* worker1's intended scope, by construction. worker2's commits — even if already pushed to `worker2/main` — stay on worker2's branch until worker2's own β runs. No attribution blur. No accidental scope absorption.
+The side-branch then holds *only* worker1's intended commits. worker2's commits, even if already pushed to `worker2/main`, stay on worker2's branch until worker2 runs its own β. Nothing gets absorbed by accident.
 
-In commands, worker1's concurrent-aware β looks like:
+In commands, worker1's concurrent-aware β looks like this:
 
 ```bash
 # 1. Identify the exact commits to ship
@@ -176,126 +172,126 @@ git merge --ff-only worker1-bundle-$(date +%Y%m%d)
 git push origin main
 ```
 
-The two non-obvious moves are step 2 (the side-branch is rooted at `origin/main`, not at `worker1/main` — this is what isolates the bundle) and step 3 (cherry-pick by SHA, not full branch merge — this is what keeps the scope exact). Step 4's `--ff-only` is what guarantees no surprise commits sneak in during the merge.
+Two moves do the work. Step 2 roots the side-branch at `origin/main` rather than `worker1/main`, which is what isolates the bundle. Step 3 cherry-picks by SHA instead of merging the whole branch, which is what keeps the scope exact. Step 4's `--ff-only` guarantees no surprise commits sneak in during the merge.
 
-If you root the side-branch at `worker1/main`, you inherit whatever worker1 has accumulated locally — including any commits that snuck in concurrently. Rooting at `origin/main` starts from canonical truth, and you add only the commits you explicitly chose.
+If you root the side-branch at `worker1/main` instead, you inherit whatever worker1 has piled up locally, including anything that snuck in concurrently. Rooting at `origin/main` starts from canonical truth and adds only the commits you chose.
 
-If worker2 starts its own β while worker1's side-branch is in flight, worker2 does the same dance against its own commit range. Both bundles land on main as clean ff-merges, neither absorbs the other, attribution stays exact.
+If worker2 starts its own β while worker1's side-branch is still in flight, worker2 runs the same steps against its own commit range. Both bundles land on `main` as clean fast-forwards, neither absorbs the other, and it stays clear which worker shipped what.
 
-Once installed as a script ([`templates/scripts/concurrent-beta.sh`](./templates/scripts/concurrent-beta.sh)), this collapses to:
+Once you wrap it in a script ([`templates/scripts/concurrent-beta.sh`](./templates/scripts/concurrent-beta.sh)), it collapses to:
 
 ```bash
 ./scripts/concurrent-beta.sh worker1
 ```
 
-The four operations — cherry-pick, push side-branch, ff-merge, push main — fit on one line of operator action. *Mechanically enforced, not remembered* applies to ceremony shape as well as ceremony trigger.
+Four operations (cherry-pick, push side-branch, fast-forward merge, push main) reduce to one command. The point is the same as everywhere else here: make the safe path the one you can run without thinking.
 
-**What can go wrong:** cherry-pick conflicts on shared files (especially STATUS_NOW), SHA misidentification across worker branches, intertwined commits that resist clean cherry-pick selection. See [`PROTOCOL.md`](./PROTOCOL.md) §Recovery for diagnostic and recovery procedures — the side-branch flow is the protocol's strongest move but also where adoption friction is highest.
+**What can go wrong:** cherry-pick conflicts on shared files (especially STATUS_NOW), picking the wrong SHAs across branches, and commits tangled together so they don't cherry-pick cleanly. See [`PROTOCOL.md`](./PROTOCOL.md) §Recovery for how to diagnose and recover. The side-branch flow is the protocol's strongest move, and also where people hit the most friction.
 
-The full ceremony — bundle naming conventions, attestation discipline, verification step, recovery from a botched cherry-pick — is in [`PROTOCOL.md`](./PROTOCOL.md).
+The full ceremony (bundle naming, attestation, the verification step, recovery from a botched cherry-pick) is in [`PROTOCOL.md`](./PROTOCOL.md).
 
 ---
 
 ## Scope collision: the third axis
 
-Convergence and attribution both handle commits that *have already been written* — α/β make sure they reach main, β.2 makes sure each lands under the right worker. Neither watches for a third hazard: two workers independently doing **the same work**.
+Convergence and attribution both deal with commits that *have already been written*. α/β make sure they reach `main`; the side-branch β makes sure each lands under the right worker. Neither watches for a third problem: two workers doing **the same task** without knowing it.
 
-One worker picks up a task; another worker, in its own session with its own context, picks up the same task; both implement it; both converge cleanly. Convergence succeeds, attribution is exact — and you've built the same thing twice, discovered at merge time after the cost is already spent. β.2 will even merge both bundles cleanly, because each is well-formed in isolation. The first two axes are working as designed; they were never watching for this.
+One worker picks up a task. Another worker, in its own session with its own context, picks up the same task. Both build it. Both converge cleanly. Convergence succeeds, attribution is exact, and you've built the same thing twice. You find out at merge time, after the work is already done. The side-branch β will even merge both copies without complaint, because each bundle is fine on its own. The first two axes are doing exactly their job. They were never watching for this.
 
-Call it **scope collision**: convergence asks *did the commits reach main*, attribution asks *whose bundle*, collision asks *should this work have started at all*.
+Call it **scope collision**. Convergence asks *did the commits reach main*. Attribution asks *whose bundle*. Collision asks *should this work have started at all*.
 
-The obvious fix — a live "I'm taking task X" claim registry — decays, because **session identity is unstable**. Sessions get spawned, re-spawned, isolated into fresh worktrees, rotated; a registry keyed on which session holds X rots the moment that session stops being the session that exists. The discipline that survives asks a question with no identity in it: **has X's change already landed on canonical?** Before starting an item, check whether its change is already an ancestor of `origin/main`; if it is, refuse. The check keys on the work-item ID and git ancestry — neither rotates. It pairs with the α tripwire: α-freshness is what keeps the ancestry check accurate (a stale worker wouldn't see a recently-landed item and would wave a redo through).
+The obvious fix is a live claim registry: before you start, you write "I'm taking task X" somewhere shared, and others check it before they pick. It falls apart for a structural reason: session identity isn't stable. Sessions get spawned, re-spawned, isolated into fresh worktrees, and rotated, so a registry keyed on "which session holds X" goes out of date the moment that session stops being the session that exists. The fix that survives asks a question with no identity in it: **has X's change already landed on canonical?** Before starting a task, check whether its change is already an ancestor of `origin/main`. If it is, don't start. The check reads only two things, the task ID and git ancestry, and neither of those rotates. It works best alongside the α tripwire, because a stale worker wouldn't see a recently-landed task and would wave a redo through.
 
-**What it doesn't catch.** This stops *already-landed* redo — the work shipped and a second worker is about to repeat it. It does **not** stop *in-flight* collision — two workers starting the same item at the same time, neither landed yet. Nothing in the commit graph distinguishes "nobody did this" from "someone is doing this right now"; that needs the live claim layer this discipline deliberately avoids. So the axis is covered asymmetrically: the cheap, durable case is solved by a check that can't rot; the simultaneous case isn't, and the protocol doesn't pretend otherwise. Pick-time ancestry is a high-value floor, not a ceiling.
+**What it doesn't catch.** This stops the *already-finished* case: the work shipped, and a second worker is about to repeat it. It does **not** stop the *in-flight* case: two workers starting the same task at the same time, neither finished yet. Nothing in the commit graph can tell "nobody did this" apart from "someone is doing this right now." Closing that case needs a live claim layer, which is the fragile thing this approach avoids on purpose. So the coverage is uneven: the common, durable case is solved by a check that can't go stale; the simultaneous case isn't, and the protocol doesn't pretend otherwise. Pick-time ancestry is a strong floor, not a ceiling.
 
-Full treatment — the mechanics, the honest limit, and how it relates to the shared-worktree race — is in [`PROTOCOL.md`](./PROTOCOL.md) §"Scope collision — the third axis". A worked example of two sessions colliding on one item is in [`examples/scope-collision-walkthrough.md`](./examples/scope-collision-walkthrough.md).
+The full treatment (the mechanics, the honest limit, and how it relates to the shared-worktree race) is in [`PROTOCOL.md`](./PROTOCOL.md) §"Scope collision — the third axis". A worked example of two sessions colliding on one task is in [`examples/scope-collision-walkthrough.md`](./examples/scope-collision-walkthrough.md).
 
 ---
 
 ## Shared files: resolution playbook
 
-Some files are written by every worker but only canonically valid on main. Each class has a resolution rule. Don't improvise.
+Some files get written by every worker but are only canonically valid on `main`. Each kind has a fixed resolution rule. Don't improvise at merge time.
 
 | File class | Resolution |
 |---|---|
-| Living state (e.g. STATUS_NOW) | Newest wins — binary choice, don't hybridize. "Newest" = the conflicting commit's timestamp or the file's own `Last updated:` field, **not** filesystem mtime (git doesn't preserve mtime across clones). |
-| Append-only (e.g. DECISIONS_LOG) | Both sides' new entries; sort by timestamp. |
-| Structured ID-keyed (e.g. BACKLOG) | Hand-merge by ID-keyed section. Never `git merge-file --union` — corrupts ID structure. |
+| Living state (e.g. STATUS_NOW) | Newest wins, as a clean choice, not a blend. "Newest" means the conflicting commit's timestamp or the file's own `Last updated:` field, **not** filesystem mtime (git doesn't preserve mtime across clones). |
+| Append-only (e.g. DECISIONS_LOG) | Keep both sides' new entries; sort by timestamp. |
+| Structured ID-keyed (e.g. BACKLOG) | Hand-merge by ID-keyed section. Never `git merge-file --union`; it corrupts the ID structure. |
 | Auto-generated index | Discard both sides; regenerate from current canonical inputs. |
-| Plain text living docs | Prefer newer; flag for re-review next session. |
+| Plain-text living docs | Prefer the newer one; flag it for re-review next session. |
 
-`PROTOCOL.md` has the full playbook with the why behind each rule. The short version: structured files have structure; treating them as line-oriented is what corrupts them.
+`PROTOCOL.md` has the full playbook with the reasoning behind each rule. The short version: structured files have structure, and treating them as plain lines is what corrupts them.
 
 ---
 
 ## Mechanically enforced, not remembered
 
-The hardest thing about a session-boundary ceremony is that you'll forget it. Not the first time — the first time you'll remember because you just adopted the protocol. The fifth time, late at night, mid-context-switch, you'll forget. Operator fatigue defeats discipline. Mechanical enforcement defeats operator fatigue.
+The hard part of a session-boundary routine is that you will forget it. Not at first; the first week it's fresh and you remember. But a few sessions in, late at night, halfway through a context switch, it slips. Discipline loses to fatigue, reliably. So don't lean on discipline. Put the check in tooling that runs whether you remember or not.
 
-Three light enforcement layers cover the three rules. None of them is intrusive; all of them are load-bearing.
+Three light enforcement layers cover the three rules. None is intrusive; all three carry real weight.
 
-**Session-start tripwire (α enforcer).** A script invoked as the first thing a fresh session does. It runs `git rev-list --count HEAD..origin/main` and refuses to proceed if the count exceeds a threshold. I use 10 — small enough that worker history stays close to canonical, large enough that the tripwire doesn't fire on routine in-session-cycle work. The threshold is the dial that defines "drift." Below it: you're operating in sync. Above it: you're operating against a stale picture, and the work you're about to do will compound the staleness. The session can't continue until α runs.
+**Session-start tripwire (α enforcer).** A script that runs as the first thing in a fresh session. It runs `git rev-list --count HEAD..origin/main` and refuses to continue if the count is over a threshold. I use 10: small enough that a worker stays close to canonical, large enough not to fire on routine in-session work. The threshold is the dial that defines "drift." Under it, you're in sync. Over it, you're working against a stale picture, and the work you're about to do will pile on more staleness. The session can't continue until α runs.
 
-**Session-end check (β enforcer).** A script invoked before a session is allowed to close out. It runs `git log --oneline origin/main..HEAD` on the worker branch; if the output is non-empty, the worker has unmerged work that hasn't reached main. The check refuses session close until β completes. This is the highest-leverage enforcer in the set — the failure mode it prevents (stranded commits that drift into a 274-commit pile) is exactly the failure mode that motivated the protocol.
+**Session-end check (β enforcer).** A script that runs before a session is allowed to close. It runs `git log --oneline origin/main..HEAD` on the worker branch; if there's any output, the worker has unmerged work that hasn't reached `main`, and the check refuses to let the session close until β finishes. This is the highest-leverage layer of the three, because the failure it prevents (stranded commits drifting into a 274-commit pile) is the exact failure that started all this.
 
-**Branch-naming pre-commit hook (γ enforcer).** A `pre-commit` hook installed on the canonical clone that rejects direct commits, full stop. It pairs with a directory-to-branch naming convention — worker directory `worker1` is required to have branch `worker1/main`, and a commit attempted from a directory whose name doesn't map to its checked-out branch is rejected. This second job (naming-convention check) is what makes the hook robust against the case where someone is on a wrongly-named branch in a worker tree and tries to commit anyway. Together: no direct commits to main, and no commits from misnamed branches anywhere.
+**Branch-naming pre-commit hook (γ enforcer).** A `pre-commit` hook on the canonical clone that rejects direct commits outright. It also enforces a naming convention: the directory `worker1` must hold the branch `worker1/main`, and a commit from a directory whose name doesn't match its checked-out branch is rejected. That second check is what makes the hook hold up when someone is on a wrongly-named branch in a worker tree and tries to commit anyway. Together: no direct commits to `main`, and no commits from misnamed branches anywhere.
 
-Templates for all three live in [`templates/hooks/`](./templates/hooks/). They're short shell scripts; adapt to your shell, set your threshold, and install.
+Templates for all three are in [`templates/hooks/`](./templates/hooks/). They're short shell scripts. Read them, set your threshold, install.
 
-The pattern is the load-bearing insight: **ceremony you mechanically can't skip is worth more than ceremony you discipline yourself to remember.** This is true at the personal scale — your future-3am-self will skip the discipline; their future-3am-self can't skip the script. It's more true when multiple workers are involved.
+The pattern underneath all three is the point: a step you *can't* skip is worth more than a step you have to remember. That's true even working alone, and more true with several workers in play.
 
 ---
 
-## When to use it — and when not to
+## When to use it, and when not to
 
 **Use it when:**
-- You're running 2+ concurrent Claude Code (or equivalent) sessions on one repo
-- Each session lives for days, not minutes — workers are *spaces* you return to, not feature branches
-- The work is parallel and benefits from independent commit history per session
-- Drift between branches is invisible until it bites
+- You run two or more concurrent Claude Code (or equivalent) sessions on one repo.
+- Each session lives for days, not minutes. The branches are workspaces you return to, not feature branches.
+- The work runs in parallel and benefits from separate commit history per session.
+- Drift between branches stays invisible until it bites.
 
 **Don't use it when:**
-- One session at a time — your standard branch + PR flow already converges
-- Short-lived feature branches — they merge and die; no convergence ceremony needed
-- Standard team workflow with code review — PRs ARE the convergence ceremony for that model
-- You only have one operator and one chat window — the failure mode this prevents doesn't trigger
-- You are running fewer than two long-lived worker sessions for multiple days a week — plain feature branches plus discipline are cheaper than this protocol
+- You work one session at a time. Your normal branch-and-PR flow already converges.
+- You use short-lived feature branches. They merge and die; no convergence routine needed.
+- You run a standard team workflow with code review. Pull requests are already the convergence point for that model.
+- You have one operator and one chat window. The failure this prevents doesn't happen.
+- You run fewer than two long-lived sessions for multiple days a week. Plain feature branches plus a little discipline are cheaper than this protocol.
 
-The gate isn't "are you using AI?" It's "do you have N long-lived branches with a single operator's attention divided across them?" If yes, you have the convergence problem. If no, you don't.
+The real question isn't "are you using AI?" It's "do you have several long-lived branches with one person's attention split across them?" If yes, you have the convergence problem. If no, you don't.
 
 ---
 
 ## Adopt the mechanics in 30 minutes; internalize the discipline over a week
 
-1. **Decide on worker topology.** How many concurrent sessions do you actually run? Peer-worker pays off at N ≥ 2, sustained. Below that, this is overkill.
-2. **Set up worker worktrees.** `git worktree add /path/to/worker1 -b worker1/main origin/main` for each. Worker directory names and branch names follow a convention so a hook can enforce them.
-3. **Adopt the three rules.** Drop the α/β/γ checklist from [`templates/ceremony-checklist.md`](./templates/ceremony-checklist.md) into your equivalent of STATUS_NOW or a session-start prompt.
-4. **Install the tripwires.** Three scripts in [`templates/hooks/`](./templates/hooks/). They're small. Skim them, adapt the threshold, install. For the γ-enforcer (`no-direct-main-commits.sh`), also `touch .canonical-clone` at the canonical clone's root — that marker is what arms the hook; without it the hook silently no-ops and direct commits to main go through.
-5. **Document the shared files.** List the files multiple workers will write. For each, write down the resolution rule (per the table above). Put the list at the top of your DECISIONS_LOG so every fresh session sees it.
+1. **Decide your worker topology.** How many sessions do you actually run at once? Peer-worker pays off at two or more, sustained. Below that, it's overkill.
+2. **Set up worker worktrees.** Run `git worktree add /path/to/worker1 -b worker1/main origin/main` for each. Directory names and branch names follow a convention so a hook can enforce them.
+3. **Adopt the three rules.** Drop the α/β/γ checklist from [`templates/ceremony-checklist.md`](./templates/ceremony-checklist.md) into your STATUS_NOW or a session-start prompt.
+4. **Install the tripwires.** Three scripts in [`templates/hooks/`](./templates/hooks/). They're small; read them, set the threshold, install. For the γ enforcer (`no-direct-main-commits.sh`), also run `touch .canonical-clone` at the canonical clone's root. That marker is what arms the hook; without it the hook quietly does nothing and direct commits go through.
+5. **Document the shared files.** List the files several workers will write. For each, write down its resolution rule (per the table above). Put that list at the top of your DECISIONS_LOG so every fresh session sees it.
 
-The setup is 30 minutes. The discipline takes longer to internalize. The first time you forget β at session-end, you'll feel the ceremony tax. The third time you cherry-pick correctly under a concurrent collision, the side-branch dance will feel automatic. That's the honest curve — fast to install, slower to make second nature.
+Setup takes about 30 minutes. The discipline takes longer to settle in. The first time you forget β at session end, you'll feel the cost. By the third time you cleanly cherry-pick through a concurrent collision, the side-branch steps feel automatic. That's the honest curve: quick to install, slower to make second nature.
 
-For the formal protocol — full ceremony shapes, side-branch cherry-pick mechanics, attestation discipline — see [`PROTOCOL.md`](./PROTOCOL.md). For a complete walkthrough including a concurrent-β collision, see [`examples/concurrent-beta-walkthrough.md`](./examples/concurrent-beta-walkthrough.md).
+For the formal protocol (the full ceremony shapes, the side-branch mechanics, the attestation step), see [`PROTOCOL.md`](./PROTOCOL.md). For a complete walkthrough including a concurrent-β collision, see [`examples/concurrent-beta-walkthrough.md`](./examples/concurrent-beta-walkthrough.md).
 
 ---
 
 ## Related work
 
-I surveyed the field before publishing. The closest adjacent pieces:
+I looked at the field before publishing. The closest pieces:
 
-**Anthropic's [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams)** (April 2026) ships native multi-Claude-Code coordination at the platform level — teams of agents under one operator, shared context within the team. Peer-Worker addresses the independent-sessions topology described in *What this protocol is not* — different shape, different operating reality, the two compose if you're running both.
+**Anthropic's [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams)** (April 2026) ships native multi-Claude-Code coordination at the platform level: teams of agents under one operator, sharing context within the team. Peer-Worker covers the independent-sessions case described above in *What this protocol is not*. Different shape, different operating reality; the two compose if you run both.
 
-**Long-lived `git worktree` as a workflow pattern** predates AI by years — see various engineering blog posts on using worktrees for parallel-task isolation, hot-fix lanes, and concurrent feature work. Peer-Worker is the AI-multi-session evolution: same isolation primitive, new convergence problem because the workers are operator-driven sessions rather than developer task lanes.
+**Long-lived `git worktree` as a workflow** predates AI by years; engineering blogs have long used worktrees for parallel-task isolation, hot-fix lanes, and concurrent feature work. Peer-Worker is the AI-multi-session version: same isolation primitive, new convergence problem, because the workers are now operator-driven sessions rather than developer task lanes.
 
-**Stacked-diff tools** (Sapling, Graphite, ghstack) coordinate concurrent feature work at a different layer — they're about navigable PR stacks, not long-lived parallel branches converging through main. Adjacent, not competing; if your team uses stacked diffs and also has the multi-session problem, the two layers compose.
+**Stacked-diff tools** (Sapling, Graphite, ghstack) coordinate concurrent feature work at a different layer. They're about navigable PR stacks, not long-lived parallel branches converging through `main`. Adjacent, not competing; if your team uses stacked diffs and also has the multi-session problem, the two layers compose.
 
-**Standard GitFlow / GitHub Flow** with feature branches + PRs is the convergence ceremony for short-lived feature work. It assumes branches die after merge. Peer-Worker is for the case where they don't.
+**Standard GitFlow / GitHub Flow** with feature branches and PRs is the convergence routine for short-lived feature work. It assumes branches die after merge. Peer-Worker is for the case where they don't.
 
-**Trunk-based development** keeps branches short and shifts complexity into feature flags. It works well for team coordination but assumes a coordinated team rhythm. Peer-Worker is for asymmetric solo-with-AI-helpers workflows where the "team" is one human and N parallel AI sessions running on independent cadences.
+**Trunk-based development** keeps branches short and pushes complexity into feature flags. It works well for a coordinated team, but it assumes a shared team rhythm. Peer-Worker is for the asymmetric solo-with-AI-helpers case, where the "team" is one person and several parallel AI sessions on their own schedules.
 
-**Christian Crumlish's ["Three-AI Orchestra"](https://medium.com/building-piper-morgan/the-three-ai-orchestra-lessons-from-coordinating-multiple-ai-agents-0aeb570e3298)** (September 2025) is adjacent but at the chat-coordination layer, not the git-convergence layer. The two protocols compose: orchestrate at the prompt layer; converge at the git layer.
+**Christian Crumlish's ["Three-AI Orchestra"](https://medium.com/building-piper-morgan/the-three-ai-orchestra-lessons-from-coordinating-multiple-ai-agents-0aeb570e3298)** (September 2025) is adjacent, but at the chat-coordination layer rather than the git-convergence layer. The two compose: orchestrate at the prompt layer, converge at the git layer.
 
-If you know of closer prior art, please open an issue — I'd genuinely like to position this against it.
+If you know of closer prior art, please open an issue. I'd genuinely like to position this against it.
 
 ---
 
@@ -313,7 +309,7 @@ More pieces as they're written.
 
 ## About ORCA
 
-ORCA — Orchestrated Reasoning for Civil Action — is an AI legal reasoning system I'm building for Israeli civil litigation. It's a decision system, not a document generator: it reasons about which causes of action hold, which elements the evidence supports, and what relief follows. A programmer builds a document generator; a litigator builds a decision system. The system is closed-source; the methodology that produced it is open. This repo publishes the coordination methodology, not ORCA's product internals — no source code, knowledge bases, prompts, customer data, or implementation roadmap.
+ORCA (Orchestrated Reasoning for Civil Action) is an AI legal reasoning system I'm building for Israeli civil litigation. It's a decision system, not a document generator: it reasons about which causes of action hold, which elements the evidence supports, and what relief follows. A programmer builds a document generator; a litigator builds a decision system. The system is closed-source; the methodology behind it is open. This repo publishes the coordination methodology, not ORCA's internals: no source code, knowledge bases, prompts, customer data, or roadmap.
 
 See my [GitHub profile](https://github.com/moranbickel) for the full body of work and how to follow ORCA's progress.
 
