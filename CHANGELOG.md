@@ -4,6 +4,18 @@ All notable changes to Peer-Worker Convergence are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] — 2026-06-28
+
+The third axis. v0.1 added convergence (α/β) and clean attribution (β.2); this names the coordination hazard those two are silent about — **scope collision**, two workers independently doing the same work — and documents the identity-independent, pick-time discipline that prevents the durable case. Additive throughout (no change to α/β/γ, the ceremonies, or the shared-file playbook); minor bump per SemVer.
+
+### Added
+- `PROTOCOL.md` — new §"Scope collision — the third axis": the distinct axis (convergence = *did commits reach main*; attribution = *whose bundle*; collision = *should this work have started*), why a live claim registry is fragile (session-identity instability), the identity-independent pick-time discipline (refuse an item whose change is already an ancestor of canonical — keyed on item-id + ancestry, neither rotates), and the honest limit (catches already-landed redo, not in-flight). Cross-linked to the shared-worktree race as sibling hazard.
+- `README.md` — new §"Scope collision: the third axis" + the *what it doesn't catch* note; the "not a complete solution" framing extended to name the third axis.
+- `examples/scope-collision-walkthrough.md` — two sessions pick the same item; convergence + β.2 still let both build it; the pick-time ancestry guard refuses the second; the in-flight case it can't catch.
+
+### Note
+- `diagram.svg` not updated this release (doesn't yet depict the third axis). Follow-up.
+
 ## [0.1.2] — 2026-05-20
 
 Terminology corrections post-publication.
@@ -43,4 +55,5 @@ Initial release.
 ### Context
 One of a series of methodology pieces from ORCA. Companion to [Russian Judge](https://github.com/moranbickel/russian-judge) (adversarial AI review) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol) (coordination across sessions in time). This piece addresses coordination across sessions in parallel.
 
+[0.2.0]: https://github.com/moranbickel/peer-worker-convergence/releases/tag/v0.2.0
 [0.1.0]: https://github.com/moranbickel/peer-worker-convergence/releases/tag/v0.1.0

@@ -49,7 +49,7 @@ Peer-Worker addresses a different topology: *one operator running N independent 
 
 If your work has a single coherent decomposition, Agent Teams is the cleaner shape. If your work has multiple parallel contexts with independent cadences, peer-worker is the shape that survives the operator-attention reality.
 
-And finally it's **not** a complete solution. It addresses the convergence ceremony. It does not address how to design work across workers (that's [Three-Body](https://github.com/moranbickel/three-body-protocol)), how to review the work each worker produces (that's [Russian Judge](https://github.com/moranbickel/russian-judge)), or how to attest the work as AI-generated (CSAE, planned). It's a load-bearing piece, not the whole structure.
+And finally it's **not** a complete solution. It addresses the convergence ceremony. It does not address how to design work across workers (that's [Three-Body](https://github.com/moranbickel/three-body-protocol)), how to review the work each worker produces (that's [Russian Judge](https://github.com/moranbickel/russian-judge)), or how to attest the work as AI-generated (CSAE, planned). Even the coordination it does cover, it covers unevenly: convergence and attribution fully, but [scope collision](#scope-collision-the-third-axis) — two workers independently doing the same work — only asymmetrically (it prevents the already-landed redo, not the in-flight case). It's a load-bearing piece, not the whole structure.
 
 ---
 
@@ -193,6 +193,22 @@ The four operations — cherry-pick, push side-branch, ff-merge, push main — f
 **What can go wrong:** cherry-pick conflicts on shared files (especially STATUS_NOW), SHA misidentification across worker branches, intertwined commits that resist clean cherry-pick selection. See [`PROTOCOL.md`](./PROTOCOL.md) §Recovery for diagnostic and recovery procedures — the side-branch flow is the protocol's strongest move but also where adoption friction is highest.
 
 The full ceremony — bundle naming conventions, attestation discipline, verification step, recovery from a botched cherry-pick — is in [`PROTOCOL.md`](./PROTOCOL.md).
+
+---
+
+## Scope collision: the third axis
+
+Convergence and attribution both handle commits that *have already been written* — α/β make sure they reach main, β.2 makes sure each lands under the right worker. Neither watches for a third hazard: two workers independently doing **the same work**.
+
+One worker picks up a task; another worker, in its own session with its own context, picks up the same task; both implement it; both converge cleanly. Convergence succeeds, attribution is exact — and you've built the same thing twice, discovered at merge time after the cost is already spent. β.2 will even merge both bundles cleanly, because each is well-formed in isolation. The first two axes are working as designed; they were never watching for this.
+
+Call it **scope collision**: convergence asks *did the commits reach main*, attribution asks *whose bundle*, collision asks *should this work have started at all*.
+
+The obvious fix — a live "I'm taking task X" claim registry — decays, because **session identity is unstable**. Sessions get spawned, re-spawned, isolated into fresh worktrees, rotated; a registry keyed on which session holds X rots the moment that session stops being the session that exists. The discipline that survives asks a question with no identity in it: **has X's change already landed on canonical?** Before starting an item, check whether its change is already an ancestor of `origin/main`; if it is, refuse. The check keys on the work-item ID and git ancestry — neither rotates. It pairs with the α tripwire: α-freshness is what keeps the ancestry check accurate (a stale worker wouldn't see a recently-landed item and would wave a redo through).
+
+**What it doesn't catch.** This stops *already-landed* redo — the work shipped and a second worker is about to repeat it. It does **not** stop *in-flight* collision — two workers starting the same item at the same time, neither landed yet. Nothing in the commit graph distinguishes "nobody did this" from "someone is doing this right now"; that needs the live claim layer this discipline deliberately avoids. So the axis is covered asymmetrically: the cheap, durable case is solved by a check that can't rot; the simultaneous case isn't, and the protocol doesn't pretend otherwise. Pick-time ancestry is a high-value floor, not a ceiling.
+
+Full treatment — the mechanics, the honest limit, and how it relates to the shared-worktree race — is in [`PROTOCOL.md`](./PROTOCOL.md) §"Scope collision — the third axis". A worked example of two sessions colliding on one item is in [`examples/scope-collision-walkthrough.md`](./examples/scope-collision-walkthrough.md).
 
 ---
 

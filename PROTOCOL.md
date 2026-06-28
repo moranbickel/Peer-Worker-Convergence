@@ -235,6 +235,39 @@ This is one of the cases where ceremony alone isn't enough; the mitigation has t
 
 ---
 
+## Scope collision — the third axis
+
+A second failure mode worth naming as a class, because convergence is silent about it.
+
+**The two axes the rules already cover.** Convergence (α/β) keeps every worker's commits reaching `origin/main` so nothing drifts. Clean attribution (β.2) keeps each bundle scoped to its own worker so nobody's commits get absorbed under someone else's. Both are about commits that *have been written* — where they go, and whose bundle they land in.
+
+**The axis they don't cover.** Neither rule stops two workers from independently doing *the same work*. Worker1 picks up a task; worker2, in its own session with its own context, picks up the same task; both implement it; both converge cleanly. Convergence succeeds. Attribution is exact. And you have built the same thing twice — discovered at merge time, after the cost is already spent. β.2 will even merge both cleanly, because each bundle is well-formed in isolation. The first two axes are working exactly as designed; they were never watching for this.
+
+Call it **scope collision**. Convergence asks *did the commits reach main*; attribution asks *whose bundle*; collision asks *should this work have started at all*.
+
+**Why the obvious fix is fragile.** The instinct is a live claim registry: before starting, a worker writes "I'm taking task X" somewhere shared; others check it before they pick. It decays for a structural reason — **session identity is unstable.** Sessions are spawned, re-spawned, isolated into fresh worktrees, rotated; a registry keyed on "which session holds X" drifts the moment the session it names stops being the session that exists. Claim entries outlive their claimants, nobody trusts them, the registry rots into ceremony nobody reads.
+
+**The discipline that works: identity-independent, pick-time prevention.** Don't ask "who is working on X." Ask a question with no identity in it: **has X's change already landed on canonical?** Before starting an item, check whether its change is already an ancestor of `origin/main`; if it is, refuse to start. The check keys on two things only — the **work-item identifier** and **git ancestry** — neither of which rotates. The item-ID names the work, not the worker; ancestry is a property of the commit graph, not of any session. The unstable substrate is sidestepped because the question never mentions it.
+
+```
+# Pick-time guard (pre-action; keyed on item-id + ancestry — no session identity)
+# Before starting work on item X:
+if <the change for X> is an ancestor of origin/main:
+    refuse — X already landed; you are about to redo shipped work
+else:
+    proceed
+```
+
+The "<the change for X> is an ancestor" test is deliberately abstract: bind it to whatever marks an item landed in your repo — a commit-message convention (`fix(X):`), a closed-item record, a tag. What matters is that it reads the *commit graph*, not a registry of intentions.
+
+**The honest limit — state it plainly.** This catches *already-landed* collisions: the work shipped and a second worker is about to redo it. It does **not** catch *in-flight* collisions: two workers starting the same item at the same time, neither landed yet. Nothing in the commit graph distinguishes "nobody did this" from "someone is doing this right now" — that needs a live claim layer, the fragile thing this discipline avoids. So the third axis is covered *asymmetrically*: the cheap, durable case is solved by a check that can't rot; the simultaneous case is not, and the protocol doesn't pretend otherwise. Pick-time ancestry is a high-value floor, not a ceiling. (The already-landed case is also the more common one across long-lived sessions — the "shipped but a peer is about to re-pick it" window is far wider than the "two peers pick the identical item in the same minute" window.)
+
+**Mechanical enforcement.** Like the other rules, this wants to be a script, not a memory — a pre-action guard that runs the ancestry test at pick time and refuses on a hit. It pairs with the session-start tripwire (α): α-freshness is what makes the ancestry test accurate (a stale worker wouldn't see a recently-landed item and would wave through a redo). The two compose.
+
+**Relationship to the shared-worktree race.** That race is *two sessions on one worker* producing non-deterministic session-state; this is *two workers doing one task* producing duplicate work. Different failure, different fix — a session-boundary lock vs. a pick-time ancestry check — but siblings in the same family: coordination hazards convergence alone is silent about.
+
+---
+
 ## Anti-patterns
 
 The most useful section for someone deciding whether to adopt this. People learn faster from "don't do this" than from "do this." Six anti-patterns, each with what people try, why it fails, what to do instead.
