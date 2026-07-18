@@ -1,12 +1,15 @@
 # Peer-Worker Convergence
 
-**A protocol for running several AI coding sessions on one repository without their branches drifting apart.** If you run multiple Claude Code sessions (or Cursor, Copilot, or any mix) on long-lived branches alongside a shared `main`, this gives you the rules and the start/end routine that keep those branches in sync instead of slowly diverging.
+A protocol for running several AI coding sessions on one repository without their
+branches drifting apart. If you run multiple long-lived sessions alongside a
+shared main, this is the start-and-end routine that keeps them in sync instead of
+slowly diverging.
 
-If you've ever opened a branch a week later, found it surprisingly far ahead of `main`, and weren't sure which of its commits had already been merged somewhere else, this is for you.
-
-I built it while developing [ORCA](#about-orca), an AI legal reasoning system for Israeli civil litigation. It's one of a series of methodology pieces I'm publishing from that work, alongside [Russian Judge](https://github.com/moranbickel/russian-judge) and [Three-Body Protocol](https://github.com/moranbickel/three-body-protocol).
-
----
+I built it developing ORCA, a closed-source legal-AI system, one of a series
+alongside [Russian-Judge](https://github.com/moranbickel/Russian-Judge) and
+[Three-Body-Protocol](https://github.com/moranbickel/Three-Body-Protocol). The
+failure it solves is below: a worker that drifted far enough from main to make
+convergence expensive, because "converge when I remember to" is not a routine.
 
 ## The failure it solves
 
@@ -22,15 +25,17 @@ The lesson: multi-session AI work has a convergence problem, and "merge often" d
 
 ---
 
+
 ## Three-Body and Peer-Worker: sibling pieces
 
-[Three-Body Protocol](https://github.com/moranbickel/three-body-protocol) covers coordination *across time*: how the thinking AI, the implementing AI, and you stay aligned across days and weeks, through files like STATUS_NOW and DECISIONS_LOG.
+[Three-Body Protocol](https://github.com/moranbickel/Three-Body-Protocol) covers coordination *across time*: how the thinking AI, the implementing AI, and you stay aligned across days and weeks, through files like STATUS_NOW and DECISIONS_LOG.
 
 Peer-Worker Convergence covers coordination *across parallel sessions*: how several worker branches stay in sync with `main`, and with each other, during the same working week.
 
 The two fit together. Three-Body's bridge files are some of the shared files this protocol's convergence routine has to merge.
 
 ---
+
 
 ## What this protocol is not
 
@@ -45,9 +50,10 @@ Peer-Worker is for a different setup: *one operator running several independent 
 
 If your work has a single clean breakdown, Agent Teams is the simpler choice. If it has several parallel threads running at their own pace, Peer-Worker is the shape that holds up.
 
-Finally, it is **not** a complete solution. It handles convergence. It does not handle how to divide work across workers (that's [Three-Body](https://github.com/moranbickel/three-body-protocol)), how to review what each worker produces (that's [Russian Judge](https://github.com/moranbickel/russian-judge)), or how to attest the work as AI-generated (CSAE, planned). It doesn't even cover all of coordination: it handles convergence and attribution fully, but [scope collision](#scope-collision-the-third-axis) (two workers unknowingly doing the same task) only partly. It catches the already-finished case, not the in-flight one. Think of it as one load-bearing piece, not the whole structure.
+Finally, it is **not** a complete solution. It handles convergence. It does not handle how to divide work across workers (that's [Three-Body](https://github.com/moranbickel/Three-Body-Protocol)), how to review what each worker produces (that's [Russian Judge](https://github.com/moranbickel/Russian-Judge)), or how to attest the work as AI-generated ([CSAE](https://github.com/moranbickel/CSAE)). It doesn't even cover all of coordination: it handles convergence and attribution fully, but [scope collision](#scope-collision-the-third-axis) (two workers unknowingly doing the same task) only partly. It catches the already-finished case, not the in-flight one. Think of it as one load-bearing piece, not the whole structure.
 
 ---
+
 
 ## Peer-Worker vs. alternatives
 
@@ -64,6 +70,7 @@ Finally, it is **not** a complete solution. It handles convergence. It does not 
 The middle column (one canonical worker that the others sync to) is what most people try first, and it's fine when the workload is light. Peer topology earns its keep once you're routinely running two or three sessions at once for days at a stretch.
 
 ---
+
 
 ## The protocol, at a glance
 
@@ -106,6 +113,7 @@ Workers will sometimes write to the same shared files (STATUS_NOW, DECISIONS_LOG
 
 ---
 
+
 ## A worked example
 
 Say I'm running two sessions today. `worker1` is doing schema changes. `worker2` is doing documentation. They both touch `docs/STATUS_NOW.md` and `docs/DECISIONS_LOG.md`.
@@ -143,11 +151,12 @@ The whole routine adds maybe two minutes per session boundary. Skipping it can c
 
 ---
 
+
 ## Concurrent-aware β: the precision-target side-branch
 
 The simple routine assumes one worker merges at a time. When two workers finish at roughly the same moment, it has a weak spot: worker1's merge can sweep in worker2's already-pushed-but-not-yet-merged commits, so it's no longer clear which worker shipped what.
 
-This is the part of the protocol that's genuinely novel, and it's one small, specific git move: **don't merge worker1/main straight into main.** Instead, cherry-pick worker1's exact commits onto a fresh side-branch *created from `origin/main`*, push that side-branch, and merge it into `main`.
+The move is one small, specific git operation: **don't merge worker1/main straight into main.** Instead, cherry-pick worker1's exact commits onto a fresh side-branch *created from `origin/main`*, push that side-branch, and merge it into `main`.
 
 The side-branch then holds *only* worker1's intended commits. worker2's commits, even if already pushed to `worker2/main`, stay on worker2's branch until worker2 runs its own β. Nothing gets absorbed by accident.
 
@@ -192,6 +201,7 @@ The full ceremony (bundle naming, attestation, the verification step, recovery f
 
 ---
 
+
 ## Scope collision: the third axis
 
 Convergence and attribution both deal with commits that *have already been written*. α/β make sure they reach `main`; the side-branch β makes sure each lands under the right worker. Neither watches for a third problem: two workers doing **the same task** without knowing it.
@@ -204,25 +214,20 @@ The obvious fix is a live claim registry: before you start, you write "I'm takin
 
 **What it doesn't catch.** This stops the *already-finished* case: the work shipped, and a second worker is about to repeat it. It does **not** stop the *in-flight* case: two workers starting the same task at the same time, neither finished yet. Nothing in the commit graph can tell "nobody did this" apart from "someone is doing this right now." Closing that case needs a live claim layer, which is the fragile thing this approach avoids on purpose. So the coverage is uneven: the common, durable case is solved by a check that can't go stale; the simultaneous case isn't, and the protocol doesn't pretend otherwise. Pick-time ancestry is a strong floor, not a ceiling.
 
-The full treatment (the mechanics, the honest limit, and how it relates to the shared-worktree race) is in [`PROTOCOL.md`](./PROTOCOL.md) §"Scope collision — the third axis". A worked example of two sessions colliding on one task is in [`examples/scope-collision-walkthrough.md`](./examples/scope-collision-walkthrough.md).
+The full treatment (the mechanics, the honest limit, and how it relates to the shared-worktree race) is in [`PROTOCOL.md`](./PROTOCOL.md) §"Scope collision - the third axis". A worked example of two sessions colliding on one task is in [`examples/scope-collision-walkthrough.md`](./examples/scope-collision-walkthrough.md).
 
 ---
+
 
 ## Shared files: resolution playbook
 
-Some files get written by every worker but are only canonically valid on `main`. Each kind has a fixed resolution rule. Don't improvise at merge time.
-
-| File class | Resolution |
-|---|---|
-| Living state (e.g. STATUS_NOW) | Newest wins, as a clean choice, not a blend. "Newest" means the conflicting commit's timestamp or the file's own `Last updated:` field, **not** filesystem mtime (git doesn't preserve mtime across clones). |
-| Append-only (e.g. DECISIONS_LOG) | Keep both sides' new entries; sort by timestamp. |
-| Structured ID-keyed (e.g. BACKLOG) | Hand-merge by ID-keyed section. Never `git merge-file --union`; it corrupts the ID structure. |
-| Auto-generated index | Discard both sides; regenerate from current canonical inputs. |
-| Plain-text living docs | Prefer the newer one; flag it for re-review next session. |
-
-`PROTOCOL.md` has the full playbook with the reasoning behind each rule. The short version: structured files have structure, and treating them as plain lines is what corrupts them.
-
----
+Several workers write the same files (STATUS_NOW, DECISIONS_LOG, BACKLOG,
+generated indexes), but those files are only canonically valid on main. Each
+class has a fixed resolution rule - newest-wins for living state, keep-both for
+append-only logs, hand-merge for ID-keyed structured files, regenerate for
+generated indexes. The full table, with the reasoning behind each rule and why
+`git merge-file --union` corrupts ID-keyed files, is in [`PROTOCOL.md`](./PROTOCOL.md)
+(Shared-file resolution playbook).
 
 ## Mechanically enforced, not remembered
 
@@ -241,6 +246,7 @@ Templates for all three are in [`templates/hooks/`](./templates/hooks/). They're
 The pattern underneath all three is the point: a step you *can't* skip is worth more than a step you have to remember. That's true even working alone, and more true with several workers in play.
 
 ---
+
 
 ## When to use it, and when not to
 
@@ -261,6 +267,7 @@ The real question isn't "are you using AI?" It's "do you have several long-lived
 
 ---
 
+
 ## Adopt the mechanics in 30 minutes; internalize the discipline over a week
 
 1. **Decide your worker topology.** How many sessions do you actually run at once? Peer-worker pays off at two or more, sustained. Below that, it's overkill.
@@ -274,6 +281,7 @@ Setup takes about 30 minutes. The discipline takes longer to settle in. The firs
 For the formal protocol (the full ceremony shapes, the side-branch mechanics, the attestation step), see [`PROTOCOL.md`](./PROTOCOL.md). For a complete walkthrough including a concurrent-β collision, see [`examples/concurrent-beta-walkthrough.md`](./examples/concurrent-beta-walkthrough.md).
 
 ---
+
 
 ## Related work
 
@@ -295,17 +303,19 @@ If you know of closer prior art, please open an issue. I'd genuinely like to pos
 
 ---
 
+
 ## Related
 
 This is one of a series of methodology pieces from building [ORCA](#about-orca):
 
-- **[Russian Judge](https://github.com/moranbickel/russian-judge)** — adversarial AI review with structured verdicts.
-- **[Three-Body Protocol](https://github.com/moranbickel/three-body-protocol)** — coordination across sessions in time.
-- **Peer-Worker Convergence** — *this repo.* Coordination across sessions in parallel.
-- **[CSAE](https://github.com/moranbickel/csae)** — attestation chains for AI-generated commits.
-- **[Pre-IMPL Forensic Discipline](https://github.com/moranbickel/Pre-IMPL-Forensic-Discipline)** — catching wrong premises before they become wrong commits (v0.1 draft).
+- **[Russian Judge](https://github.com/moranbickel/Russian-Judge)** - adversarial AI review with structured verdicts.
+- **[Three-Body Protocol](https://github.com/moranbickel/Three-Body-Protocol)** - coordination across sessions in time.
+- **Peer-Worker Convergence** - *this repo.* Coordination across sessions in parallel.
+- **[CSAE](https://github.com/moranbickel/CSAE)** - attestation chains for AI-generated commits.
+- **[Pre-IMPL Forensic Discipline](https://github.com/moranbickel/Pre-IMPL-Forensic-Discipline)** - catching wrong premises before they become wrong commits (v0.1 draft).
 
 More pieces as they're written.
+
 
 ## About ORCA
 
@@ -315,9 +325,10 @@ See my [GitHub profile](https://github.com/moranbickel) for the full body of wor
 
 ---
 
+
 ## License
 
 - Prose: [CC BY 4.0](./LICENSE-CC-BY-4.0)
 - Templates and code: [MIT](./LICENSE-MIT)
 
-— Moran Bickel
+- Moran Bickel
