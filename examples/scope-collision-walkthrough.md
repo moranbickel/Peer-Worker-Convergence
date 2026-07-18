@@ -8,7 +8,7 @@ This walkthrough has two parts. **Part 1** is the collision the guard catches: t
 
 ---
 
-## Part 1 — the already-landed collision (what the guard catches)
+## Part 1 - the already-landed collision (what the guard catches)
 
 ### Without the guard
 
@@ -16,14 +16,14 @@ This walkthrough has two parts. **Part 1** is the collision the guard catches: t
 
 | Wall clock | worker1 | worker2 |
 |---|---|---|
-| Mon 09:00 | α — `git fetch && git merge --ff-only origin/main` ✓ | — |
-| Mon 09:05 | Picks `FIX-204`. | — |
-| Mon 11:00 | Commit: `fix(FIX-204): harden the session-end check`. | — |
-| Mon 15:00 | β — `fix(FIX-204)` lands on `origin/main`. | — |
-| Wed 09:00 | — | α — `git fetch && git merge --ff-only origin/main` ✓ |
-| Wed 09:05 | — | Picks `FIX-204` (operator forgot it shipped Monday). |
-| Wed 11:00 | — | Commit: `fix(FIX-204): harden the session-end check` *(again)*. |
-| Wed 15:00 | — | β.2 — the second `FIX-204` lands cleanly on `origin/main`. |
+| Mon 09:00 | α - `git fetch && git merge --ff-only origin/main` ✓ | - |
+| Mon 09:05 | Picks `FIX-204`. | - |
+| Mon 11:00 | Commit: `fix(FIX-204): harden the session-end check`. | - |
+| Mon 15:00 | β - `fix(FIX-204)` lands on `origin/main`. | - |
+| Wed 09:00 | - | α - `git fetch && git merge --ff-only origin/main` ✓ |
+| Wed 09:05 | - | Picks `FIX-204` (operator forgot it shipped Monday). |
+| Wed 11:00 | - | Commit: `fix(FIX-204): harden the session-end check` *(again)*. |
+| Wed 15:00 | - | β.2 - the second `FIX-204` lands cleanly on `origin/main`. |
 
 Note what *didn't* fail. worker2's α succeeded: it pulled main, so its tree literally contains Monday's `fix(FIX-204)` commit. Its β.2 succeeded: the bundle was well-formed, rooted at `origin/main`, attribution exact. Both axes did exactly their jobs. And `origin/main` now carries the same fix twice: a redo commit that re-implements work already present, discovered at review time after Wednesday's session-cost is spent. Convergence asked *did the commits reach main* (yes); attribution asked *whose bundle* (worker2's, cleanly); neither asked *should this work have started at all*.
 
@@ -32,14 +32,14 @@ Note what *didn't* fail. worker2's α succeeded: it pulled main, so its tree lit
 The guard runs once, at pick time, before worker2 starts:
 
 ```bash
-# Pick-time ancestry guard — run before starting item X (worker2, Wednesday)
+# Pick-time ancestry guard - run before starting item X (worker2, Wednesday)
 ITEM="FIX-204"
 
 git -C /repo/worker2 fetch origin     # α-freshness: see what has landed since last sync
 
 # Is the item's change already an ancestor of canonical?
 if git -C /repo/worker2 log origin/main --grep="fix($ITEM)" --oneline | grep -q .; then
-  echo "REFUSE: $ITEM already landed on origin/main — you are about to redo shipped work."
+  echo "REFUSE: $ITEM already landed on origin/main - you are about to redo shipped work."
   git -C /repo/worker2 log origin/main --grep="fix($ITEM)" --oneline -1   # show the landing commit
   exit 1
 fi
@@ -52,17 +52,17 @@ The `git fetch` on the first line is load-bearing; see non-obvious move #2 below
 
 ---
 
-## Part 2 — the in-flight collision (what the guard can't catch)
+## Part 2 - the in-flight collision (what the guard can't catch)
 
 Now both sessions pick the *same* item on the *same* morning, before either has landed anything.
 
 | Wall clock | worker1 | worker2 |
 |---|---|---|
-| 09:00 | α ✓. Picks `FIX-205`. Guard: no `fix(FIX-205)` on main → **proceed**. | — |
-| 09:02 | — | α ✓. Picks `FIX-205`. Guard: no `fix(FIX-205)` on main → **proceed**. |
-| 09:00–14:00 | Implements `FIX-205`. | Implements `FIX-205`. |
-| 15:00 | β — `fix(FIX-205)` lands on `origin/main`. | — |
-| 15:30 | — | β.2 — the second `FIX-205` lands on `origin/main`. |
+| 09:00 | α ✓. Picks `FIX-205`. Guard: no `fix(FIX-205)` on main → **proceed**. | - |
+| 09:02 | - | α ✓. Picks `FIX-205`. Guard: no `fix(FIX-205)` on main → **proceed**. |
+| 09:00-14:00 | Implements `FIX-205`. | Implements `FIX-205`. |
+| 15:00 | β - `fix(FIX-205)` lands on `origin/main`. | - |
+| 15:30 | - | β.2 - the second `FIX-205` lands on `origin/main`. |
 
 Both guards ran. Both were *correct*: at 09:00 and 09:02, nothing matching `fix(FIX-205)` was an ancestor of `origin/main`, because nobody had landed it yet. The guard reported the literal truth of the commit graph, and the commit graph has no entry for "someone is implementing this right now." It cannot distinguish "nobody did this" from "two people are doing this simultaneously," because the only durable evidence either way is a *landed commit*, and at pick time there isn't one.
 
@@ -86,6 +86,6 @@ The whole guard is one `git log --grep` against canonical, run once at pick time
 
 ---
 
-← Back to [`README.md`](../README.md) · [`PROTOCOL.md`](../PROTOCOL.md) §"Scope collision — the third axis"
+← Back to [`README.md`](../README.md) · [`PROTOCOL.md`](../PROTOCOL.md) §"Scope collision - the third axis"
 
-— Moran Bickel
+- Moran Bickel

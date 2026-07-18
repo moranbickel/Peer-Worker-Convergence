@@ -10,17 +10,17 @@
 #   1. cp this file to .git/hooks/pre-commit and `chmod +x` it.
 #   2. `touch .canonical-clone` at the repo root. This marker is what ARMS
 #      the hook (see the check below). WITHOUT THE MARKER THE HOOK SILENTLY
-#      NO-OPS and direct commits to main are allowed — defeating rule γ.
-# Do NOT install in worker trees — workers SHOULD accept commits; only the
+#      NO-OPS and direct commits to main are allowed - defeating rule γ.
+# Do NOT install in worker trees - workers SHOULD accept commits; only the
 # canonical clone should not (and worker trees must NOT carry the marker).
 #
 # Why a bypass mechanism exists:
-# Operators occasionally need to commit directly to main — release tags,
+# Operators occasionally need to commit directly to main - release tags,
 # manual recovery operations, ceremonial commits. Forbidding all direct
 # commits unconditionally would make these legitimate operations
 # impossible. The bypass is intentionally awkward (an env var, not a CLI
 # flag) so it's deliberate. If you find yourself bypassing routinely,
-# the protocol isn't fitting the work — investigate.
+# the protocol isn't fitting the work - investigate.
 
 set -euo pipefail
 
@@ -30,7 +30,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 # (.canonical-clone) created at clone-setup time (install step 2 above). It
 # is what distinguishes the canonical clone from a worker tree. If the marker
 # is absent, this hook treats the repo as a worker tree and allows the commit
-# — so a canonical clone WITHOUT the marker silently disarms γ. Adjust the
+# - so a canonical clone WITHOUT the marker silently disarms γ. Adjust the
 # convention if your project uses a different one.
 if [[ ! -f "$REPO_ROOT/.canonical-clone" ]]; then
   # Not in the canonical clone (no marker). Worker trees may commit freely.
@@ -44,7 +44,7 @@ if [[ "${BYPASS_GAMMA:-}" == "1" ]]; then
 fi
 
 cat >&2 <<EOF
-γ-enforcer: REFUSED — direct commit to main is forbidden by Peer-Worker Convergence rule γ.
+γ-enforcer: REFUSED - direct commit to main is forbidden by Peer-Worker Convergence rule γ.
 
 All commits must land via a worker (workerN/main → β-merge to main).
 

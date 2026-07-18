@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
-# concurrent-beta.sh — precision-target side-branch β-merge (Peer-Worker Convergence, β.2)
+# concurrent-beta.sh - precision-target side-branch β-merge (Peer-Worker Convergence, β.2)
 #
 # Ships a worker branch's unique commits to canonical main WITHOUT absorbing a
 # concurrent worker's pushed-but-unmerged commits. It does this by cherry-picking
 # the worker's exact commits onto a fresh side-branch rooted at origin/main, then
 # fast-forward-merging that side-branch into main. The side-branch contains only
-# the chosen scope, by construction — so attribution stays exact even when two
+# the chosen scope, by construction - so attribution stays exact even when two
 # workers β at roughly the same time.
 #
 # This automates the manual ceremony in README.md ("Concurrent-aware β") and
 # PROTOCOL.md. Copy it into your own repo (e.g. as scripts/concurrent-beta.sh)
-# and run it from the canonical clone — the checkout that tracks origin/main.
+# and run it from the canonical clone - the checkout that tracks origin/main.
 #
 # Usage:
 #   ./concurrent-beta.sh <worker> [canonical-branch]
@@ -25,7 +25,7 @@
 #
 # Exit codes:
 #   0  success (or nothing to ship)
-#   1  cherry-pick conflict — resolve by hand (see PROTOCOL.md §Recovery)
+#   1  cherry-pick conflict - resolve by hand (see PROTOCOL.md §Recovery)
 #   2  usage / precondition error
 #
 # Portable to bash 3.2+ (no mapfile). Requires: git.

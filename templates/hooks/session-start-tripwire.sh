@@ -10,13 +10,13 @@
 #   ./session-start-tripwire.sh /path/to/workerN
 #
 # Exit codes:
-#   0 — worker is sufficiently in sync; session may proceed
-#   1 — worker is drifted beyond threshold; α must run before work
-#   2 — error (worker tree missing, origin unreachable, etc.)
+#   0 - worker is sufficiently in sync; session may proceed
+#   1 - worker is drifted beyond threshold; α must run before work
+#   2 - error (worker tree missing, origin unreachable, etc.)
 #
 # Why the threshold is configurable:
 # Set DRIFT_THRESHOLD too low (e.g., 1) and the tripwire fires every time
-# any other worker β-merges — operator fatigue from spurious blocks.
+# any other worker β-merges - operator fatigue from spurious blocks.
 # Set it too high (e.g., 100) and the worker can accumulate enough drift
 # that recovery is non-trivial. The default of 10 is a compromise: small
 # enough that drift stays cheap to recover, large enough that routine
@@ -54,7 +54,7 @@ if [[ "$BEHIND" -le "$DRIFT_THRESHOLD" ]]; then
 fi
 
 cat >&2 <<EOF
-session-start-tripwire: BLOCKED — worker is $BEHIND commit(s) behind origin/main (threshold: $DRIFT_THRESHOLD).
+session-start-tripwire: BLOCKED - worker is $BEHIND commit(s) behind origin/main (threshold: $DRIFT_THRESHOLD).
 
 Run α before any work:
   cd $WORKER_DIR
@@ -63,7 +63,7 @@ Run α before any work:
   git merge origin/main              # if local unique commits exist; resolve shared-file conflicts per playbook
 
 You're operating against a stale picture of main. Any work you do now will
-need to be reconciled with the changes you haven't yet pulled — better to
+need to be reconciled with the changes you haven't yet pulled - better to
 reconcile them now than to discover them mid-session.
 EOF
 exit 1
