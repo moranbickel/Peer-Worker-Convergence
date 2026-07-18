@@ -23,9 +23,9 @@ The peer topology: N workers, all equal. No primary. No canonical worker. The ca
 
 ---
 
-## The three rules — formal definitions
+## The three rules - formal definitions
 
-### α — Session start
+### α - Session start
 
 **Trigger:** First action in any new session against a worker.
 
@@ -56,13 +56,13 @@ git merge origin/main
 
 ---
 
-### β — Session end
+### β - Session end
 
 **Trigger:** Last action in any session against a worker, before close.
 
 **Two ceremony shapes:**
-- **β.1** — Solo-fast-path. Used when no other workers are concurrently mid-flight in a β of their own.
-- **β.2** — Precision-target side-branch. Used by default in any environment with 2+ concurrent workers. Safe to use when β.1 would also work; not safe to skip when β.1 would not work.
+- **β.1** - Solo-fast-path. Used when no other workers are concurrently mid-flight in a β of their own.
+- **β.2** - Precision-target side-branch. Used by default in any environment with 2+ concurrent workers. Safe to use when β.1 would also work; not safe to skip when β.1 would not work.
 
 When in doubt: use β.2. Its overhead is small; its safety property holds in all cases β.1 holds and additional cases β.1 does not. **The asymmetry is steep: β.2 costs seconds you don't notice; the failure mode β.2 prevents costs hours of git archaeology you do.**
 
@@ -77,7 +77,7 @@ When in doubt: use β.2. Its overhead is small; its safety property holds in all
 
 ---
 
-### γ — No direct commits to main
+### γ - No direct commits to main
 
 **Trigger:** Any commit attempt in the canonical clone.
 
@@ -89,7 +89,7 @@ When in doubt: use β.2. Its overhead is small; its safety property holds in all
 
 ---
 
-## β.1 — Solo-fast-path ceremony
+## β.1 - Solo-fast-path ceremony
 
 Used when no other workers are mid-β.
 
@@ -121,7 +121,7 @@ If step 3 fails (`merge --ff-only` rejects because main has commits not in `work
 
 ---
 
-## β.2 — Precision-target side-branch ceremony
+## β.2 - Precision-target side-branch ceremony
 
 The architecturally distinctive piece of the protocol. Used by default when concurrent workers exist.
 
@@ -154,7 +154,7 @@ git push origin main
 
 # 6. Verification
 git merge-base --is-ancestor "$BUNDLE" origin/main; echo $?
-# Expected: 0 (ancestor — every cherry-picked commit is reachable from main).
+# Expected: 0 (ancestor - every cherry-picked commit is reachable from main).
 
 # 7. Delete the side-branch locally and on origin
 git branch -d "$BUNDLE"
@@ -163,7 +163,7 @@ git push origin --delete "$BUNDLE"
 
 **Bundle naming convention:** `<worker>-bundle-<timestamp>`. The timestamp suffix matters. If a β.2 fails midway and you retry, the retry gets a new timestamp, so the failed bundle remains visible in history for forensic recovery.
 
-**Attestation discipline (light version):** the merge commit produced by step 5 carries the bundle name in its message: `Merge bundle workerN-bundle-<timestamp> into main`. This is enough to forensically reconstruct "which worker shipped which commit when" from `git log` alone, without external attestation infrastructure. The full attestation chain, linking AI-generated commits to operator-approved bundles with cryptographic continuity, is the subject of a separate methodology piece (CSAE, planned).
+**Attestation discipline (light version):** the merge commit produced by step 5 carries the bundle name in its message: `Merge bundle workerN-bundle-<timestamp> into main`. This is enough to forensically reconstruct "which worker shipped which commit when" from `git log` alone, without external attestation infrastructure. The full attestation chain, linking AI-generated commits to operator-approved bundles with cryptographic continuity, is the subject of a separate methodology piece (CSAE).
 
 **Verification step:** step 6 is non-optional. β.2 is correct only when every cherry-picked commit ends up reachable from `origin/main`. If verification fails, you've shipped a partial bundle. See Recovery.
 
@@ -235,7 +235,7 @@ This is one of the cases where ceremony alone isn't enough; the mitigation has t
 
 ---
 
-## Scope collision — the third axis
+## Scope collision - the third axis
 
 A second failure mode worth naming as a class, because convergence is silent about it.
 
@@ -250,10 +250,10 @@ Call it **scope collision**. Convergence asks *did the commits reach main*; attr
 **The discipline that works: identity-independent, pick-time prevention.** Don't ask "who is working on X." Ask a question with no identity in it: **has X's change already landed on canonical?** Before starting an item, check whether its change is already an ancestor of `origin/main`; if it is, refuse to start. The check keys on two things only, the **work-item identifier** and **git ancestry**, neither of which rotates. The item-ID names the work, not the worker; ancestry is a property of the commit graph, not of any session. The unstable substrate is sidestepped because the question never mentions it.
 
 ```
-# Pick-time guard (pre-action; keyed on item-id + ancestry — no session identity)
+# Pick-time guard (pre-action; keyed on item-id + ancestry - no session identity)
 # Before starting work on item X:
 if <the change for X> is an ancestor of origin/main:
-    refuse — X already landed; you are about to redo shipped work
+    refuse - X already landed; you are about to redo shipped work
 else:
     proceed
 ```
@@ -389,20 +389,20 @@ Run these after every β. If any fails, β didn't complete. Investigate before c
 
 ## Glossary
 
-- **α** — session-start rule. Pull main into worker before any work.
-- **β** — session-end rule. Merge worker → main, push main. Two ceremony shapes: β.1 (solo-fast-path) and β.2 (precision-target side-branch).
-- **γ** — no-direct-main-commits rule. Pre-commit hook enforces.
-- **Bundle** — the side-branch created during β.2, named `<worker>-bundle-<timestamp>`.
-- **Canonical** — `origin/main`. The single source of truth.
-- **Canonical clone** — a working copy of the repo dedicated to β operations; no editing happens here.
-- **Drift** — divergence between a worker branch and `origin/main` that grew silently.
-- **Peer topology** — N workers, all equal; convergence through canonical, not through any one worker.
-- **Side-branch** — the short-lived branch in β.2, rooted at `origin/main`.
-- **Stranded** — a worker with commits that haven't reached `origin/main`. The state β is designed to prevent.
-- **Worker** — a long-lived workspace implemented as a `git worktree`. Workers are *spaces*, not *features*.
+- **α** - session-start rule. Pull main into worker before any work.
+- **β** - session-end rule. Merge worker → main, push main. Two ceremony shapes: β.1 (solo-fast-path) and β.2 (precision-target side-branch).
+- **γ** - no-direct-main-commits rule. Pre-commit hook enforces.
+- **Bundle** - the side-branch created during β.2, named `<worker>-bundle-<timestamp>`.
+- **Canonical** - `origin/main`. The single source of truth.
+- **Canonical clone** - a working copy of the repo dedicated to β operations; no editing happens here.
+- **Drift** - divergence between a worker branch and `origin/main` that grew silently.
+- **Peer topology** - N workers, all equal; convergence through canonical, not through any one worker.
+- **Side-branch** - the short-lived branch in β.2, rooted at `origin/main`.
+- **Stranded** - a worker with commits that haven't reached `origin/main`. The state β is designed to prevent.
+- **Worker** - a long-lived workspace implemented as a `git worktree`. Workers are *spaces*, not *features*.
 
 ---
 
 For the informal motivation and the failure-it-solves story, see [`README.md`](./README.md). For a complete walkthrough including a concurrent-β collision, see [`examples/concurrent-beta-walkthrough.md`](./examples/concurrent-beta-walkthrough.md).
 
-— Moran Bickel
+- Moran Bickel
