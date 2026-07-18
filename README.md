@@ -1,5 +1,7 @@
 # Peer-Worker Convergence
 
+[![smoke](https://github.com/moranbickel/Peer-Worker-Convergence/actions/workflows/smoke.yml/badge.svg)](https://github.com/moranbickel/Peer-Worker-Convergence/actions/workflows/smoke.yml)
+
 A protocol for running several AI coding sessions on one repository without their
 branches drifting apart. If you run multiple long-lived sessions alongside a
 shared main, this is the start-and-end routine that keeps them in sync instead of
