@@ -4,21 +4,21 @@
 #
 # Refuses to allow a worker session to close while it has commits that
 # haven't reached origin/main. This is the highest-leverage enforcer in
-# the protocol — its job is to prevent the 274-commit drift failure mode
+# the protocol - its job is to prevent the 274-commit drift failure mode
 # by mechanically refusing the close-without-β path.
 #
 # Usage: invoke as the last thing a session does, before close.
 #   ./session-end-check.sh /path/to/workerN
 #
 # Exit codes:
-#   0 — session may close (worker is converged)
-#   1 — session cannot close (worker has unmerged commits; run β first)
-#   2 — error (worker tree missing, origin unreachable, etc.)
+#   0 - session may close (worker is converged)
+#   1 - session cannot close (worker has unmerged commits; run β first)
+#   2 - error (worker tree missing, origin unreachable, etc.)
 #
 # Why this is the highest-leverage enforcer:
-# The session-start tripwire (α) catches stale state at session start —
+# The session-start tripwire (α) catches stale state at session start -
 # important, but recoverable: you pull main and continue. The pre-commit
-# hook (γ) blocks accidents at commit-time — important, but the affected
+# hook (γ) blocks accidents at commit-time - important, but the affected
 # commits are obvious and easy to retry. This check is different: the
 # failure mode it prevents (stranded commits piling up over weeks) is
 # invisible until you happen to look, and the cost grows nonlinearly with
@@ -39,7 +39,7 @@ if [[ ! -e "$WORKER_DIR/.git" ]]; then
   exit 2
 fi
 
-# Refresh remote state. Non-optional — the check is meaningless against
+# Refresh remote state. Non-optional - the check is meaningless against
 # a stale view of origin/main.
 if ! git -C "$WORKER_DIR" fetch origin --quiet 2>/dev/null; then
   echo "error: could not fetch origin (is it reachable?)" >&2
@@ -56,7 +56,7 @@ if [[ "$STRANDED" == "0" ]]; then
 fi
 
 cat >&2 <<EOF
-session-end-check: REFUSED — worker has $STRANDED commit(s) not on origin/main.
+session-end-check: REFUSED - worker has $STRANDED commit(s) not on origin/main.
 
 Run β before closing this session. See PROTOCOL.md §β for the procedure.
 

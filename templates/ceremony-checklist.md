@@ -1,4 +1,4 @@
-# Peer-Worker Convergence — α/β/γ Checklist
+# Peer-Worker Convergence - α/β/γ Checklist
 
 | Rule | When | Action |
 |---|---|---|

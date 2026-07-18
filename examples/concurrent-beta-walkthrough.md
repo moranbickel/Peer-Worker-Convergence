@@ -4,8 +4,8 @@ A full end-to-end walkthrough of two operator-driven sessions converging through
 
 The scenario: two worker trees (`worker1` and `worker2`) on a shared repo. One operator (you) is alternating attention between them across an afternoon. Each worker is mid-stream on its own scope:
 
-- `worker1` — refactoring a payment-handling module. Three commits today.
-- `worker2` — updating documentation across several files, including STATUS_NOW and DECISIONS_LOG. Five commits today.
+- `worker1` - refactoring a payment-handling module. Three commits today.
+- `worker2` - updating documentation across several files, including STATUS_NOW and DECISIONS_LOG. Five commits today.
 
 Both workers need to land before end of day. Neither knows about the other's commits until convergence happens.
 
@@ -17,21 +17,21 @@ This walkthrough shows: both workers running α at session start, both workers c
 
 | Wall clock | worker1 (refactor) | worker2 (docs) |
 |---|---|---|
-| 09:00 | α — `git fetch && git merge --ff-only origin/main` ✓ | — |
-| 09:30 | Commit 1: refactor payment-validation function. | — |
-| 10:00 | — | α — `git fetch && git merge --ff-only origin/main` ✓ |
-| 10:15 | Commit 2: update payment-handler tests. | — |
-| 10:30 | — | Commit 1: update STATUS_NOW with today's docs scope. |
+| 09:00 | α - `git fetch && git merge --ff-only origin/main` ✓ | - |
+| 09:30 | Commit 1: refactor payment-validation function. | - |
+| 10:00 | - | α - `git fetch && git merge --ff-only origin/main` ✓ |
+| 10:15 | Commit 2: update payment-handler tests. | - |
+| 10:30 | - | Commit 1: update STATUS_NOW with today's docs scope. |
 | 11:00 | Commit 3: add error-handling for new edge case. | Commit 2: update DECISIONS_LOG. |
-| 11:30 | — | Commit 3: rewrite section 2 of architecture doc. |
-| 13:30 | — | Commit 4: rewrite section 3 of architecture doc. |
-| 14:00 | (no further commits today; ready for β) | — |
-| 14:30 | — | Commit 5: update STATUS_NOW with end-of-day state. |
-| 15:00 | β.1 — `git push origin worker1/main` ✓ | — |
-| 15:01 | canonical-clone: `git merge --ff-only worker1/main` ✓ | — |
-| 15:02 | `git push origin main` ✓ — worker1 β complete. | — |
-| 15:05 | — | β.1 — `git push origin worker2/main` ✓ |
-| 15:06 | — | canonical-clone: `git merge --ff-only worker2/main` **fails** — not fast-forwardable. |
+| 11:30 | - | Commit 3: rewrite section 2 of architecture doc. |
+| 13:30 | - | Commit 4: rewrite section 3 of architecture doc. |
+| 14:00 | (no further commits today; ready for β) | - |
+| 14:30 | - | Commit 5: update STATUS_NOW with end-of-day state. |
+| 15:00 | β.1 - `git push origin worker1/main` ✓ | - |
+| 15:01 | canonical-clone: `git merge --ff-only worker1/main` ✓ | - |
+| 15:02 | `git push origin main` ✓ - worker1 β complete. | - |
+| 15:05 | - | β.1 - `git push origin worker2/main` ✓ |
+| 15:06 | - | canonical-clone: `git merge --ff-only worker2/main` **fails** - not fast-forwardable. |
 
 This is the moment. The world changed under worker2's β.1: worker1 landed first, main moved, worker2's β.1 can't ff-merge anymore.
 
@@ -109,7 +109,7 @@ git push origin main
 ```bash
 # Step 6: verification
 git merge-base --is-ancestor "$BUNDLE" origin/main; echo $?
-# Output: 0   (ancestor — every cherry-picked commit is reachable from main)
+# Output: 0   (ancestor - every cherry-picked commit is reachable from main)
 
 # Step 7: clean up the side-branch
 git branch -d "$BUNDLE"
@@ -142,7 +142,7 @@ Verification across all workers:
 
 ```bash
 git -C /repo/worker1 rev-list --count HEAD..origin/main
-# 5  (main is ahead by worker2's 5 commits — worker1 will catch up at next α)
+# 5  (main is ahead by worker2's 5 commits - worker1 will catch up at next α)
 
 git -C /repo/worker2 rev-list --count HEAD..origin/main
 # 0  (worker2 just β'd; in sync)
@@ -192,4 +192,4 @@ The shared-worktree race problem (two sessions on one worker tree) is a differen
 
 ← Back to [`README.md`](../README.md) · [`PROTOCOL.md`](../PROTOCOL.md)
 
-— Moran Bickel
+- Moran Bickel
