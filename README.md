@@ -33,6 +33,16 @@ The [checklist](templates/ceremony-checklist.md), [hooks](templates/hooks/), and
 routine. Read their assumptions before installing them. The direct-main hook
 requires a `.canonical-clone` marker to be active.
 
+The bundle script cherry-picks a worker's commits onto a fresh branch rooted at
+`origin/main`, pushes that branch, and stops. It does not change local or remote
+`main`. If the GitHub CLI (`gh`) is installed and `origin` is a GitHub remote, it
+opens a pull request; otherwise it prints the compare link or PR instructions. A
+missing or failing `gh` is not an error. `--direct-main` (or `PWC_DIRECT_MAIN=1`)
+opts in to fast-forwarding and pushing `main` directly. That fails under branch
+protection and publishes without review, so use it only on a repository you
+control that has no protection on `main`. Behaviour is checked by
+`bash tests/test-concurrent-beta.sh`.
+
 The [protocol](PROTOCOL.md) covers selecting commits, concurrent publication,
 shared-file conflicts, and recovery. Its merge examples need adaptation to your
 branch protection and review requirements.
@@ -53,4 +63,12 @@ For handoff files, see [Three-Body-Protocol](https://github.com/moranbickel/Thre
 For work-item records, see [Docket](https://github.com/moranbickel/Docket).
 
 Maintained by [Moran Bickel](https://github.com/moranbickel).
-Prose: [CC BY 4.0](LICENSE-CC-BY-4.0). Templates and code: [MIT](LICENSE-MIT).
+
+## License
+
+- [CC BY 4.0](LICENSE-docs) (notice only; legal text at
+  <https://creativecommons.org/licenses/by/4.0/legalcode>): `README.md`,
+  `PROTOCOL.md`, `CHANGELOG.md`, `CITATION.md`, `diagram.svg`, and everything under
+  `examples/`.
+- [MIT](LICENSE) (same text in `LICENSE-MIT`): everything under `templates/`,
+  `tests/` and `.github/`, and any other script or code in this repository.

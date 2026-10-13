@@ -1,3 +1,8 @@
+Scope: this MIT license covers templates/, tests/, .github/, and every other
+script or code file in this repository. The prose (README.md, PROTOCOL.md,
+CHANGELOG.md, CITATION.md, diagram.svg and examples/) is licensed separately under
+CC BY 4.0; see LICENSE-docs.
+
 MIT License
 
 Copyright (c) 2026 Moran Bickel

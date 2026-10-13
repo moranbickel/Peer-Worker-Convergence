@@ -4,6 +4,15 @@ All notable changes to Peer-Worker Convergence are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- `templates/scripts/concurrent-beta.sh` now publishes the side-branch and stops by default, opening a pull request when `gh` is available (otherwise printing PR instructions). It no longer fast-forwards or pushes `main` unless `--direct-main` / `PWC_DIRECT_MAIN=1` is given, because direct publication fails under branch protection.
+- License files: `LICENSE` and `LICENSE-MIT` state they cover `templates/`, `tests/`, `.github/` and code; `LICENSE-CC-BY-4.0` is renamed `LICENSE-docs`; the README lists which paths fall under which license.
+
+### Added
+- `tests/test-concurrent-beta.sh`, run by the `smoke` workflow: behavioural coverage of the helper against temporary repositories.
+
 ## [0.2.0] - 2026-06-28
 
 The third axis. v0.1 added convergence (α/β) and clean attribution (β.2); this names the coordination hazard those two are silent about - **scope collision**, two workers independently doing the same work - and documents the identity-independent, pick-time discipline that prevents the durable case. Additive throughout (no change to α/β/γ, the ceremonies, or the shared-file playbook); minor bump per SemVer.

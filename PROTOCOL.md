@@ -146,7 +146,9 @@ done
 # 4. Push the side-branch
 git push origin "$BUNDLE"
 
-# 5. Merge the side-branch into main (ff-only required)
+# 5. Merge the side-branch into main (ff-only required).
+#    This publishes main directly. Under branch protection, open a pull request
+#    from "$BUNDLE" into main instead and skip to step 6 after it merges.
 git checkout main
 git fetch origin
 git merge --ff-only "$BUNDLE"
@@ -160,6 +162,8 @@ git merge-base --is-ancestor "$BUNDLE" origin/main; echo $?
 git branch -d "$BUNDLE"
 git push origin --delete "$BUNDLE"
 ```
+
+**The helper script publishes for review by default.** [`templates/scripts/concurrent-beta.sh`](./templates/scripts/concurrent-beta.sh) runs steps 1-4 and then stops: it leaves local and remote `main` untouched, and opens a pull request when `gh` is installed and `origin` is GitHub (otherwise it prints the compare link or PR instructions). Step 5 then happens through your normal review and merge, and works under branch protection. `--direct-main` (or `PWC_DIRECT_MAIN=1`) makes the helper run step 5 itself and push `main`; that fails under branch protection and skips review, so use it only on a repository you control that has no protection on `main`.
 
 **Bundle naming convention:** `<worker>-bundle-<timestamp>`. The timestamp suffix matters. If a β.2 fails midway and you retry, the retry gets a new timestamp, so the failed bundle remains visible in history for forensic recovery.
 

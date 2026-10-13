@@ -98,6 +98,8 @@ The remaining four commits cherry-pick cleanly: they touch DECISIONS_LOG (append
 git push origin "$BUNDLE"
 
 # Step 5: merge side-branch into main (ff-only)
+# (Direct publication. On a protected main, open a pull request from "$BUNDLE"
+# instead; templates/scripts/concurrent-beta.sh does that by default.)
 git checkout main
 git fetch origin
 git merge --ff-only "$BUNDLE"

@@ -1,0 +1,19 @@
+Peer-Worker Convergence - documentation and prose
+Copyright (c) 2026 Moran Bickel
+
+This notice applies to the prose in this repository: README.md, PROTOCOL.md,
+CHANGELOG.md, CITATION.md, diagram.svg, and everything under examples/. It does not apply
+to templates/, tests/, .github/, or any other script or code; those are
+MIT-licensed (see LICENSE).
+
+The covered material is licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0).
+
+You may share and adapt it, including commercially, provided you give
+appropriate credit, link to the license, and indicate if you made changes.
+
+License URL:  https://creativecommons.org/licenses/by/4.0/
+Legal code:   https://creativecommons.org/licenses/by/4.0/legalcode
+
+This file is a notice only. It does not reproduce the license text; the legal
+code at the URL above governs.

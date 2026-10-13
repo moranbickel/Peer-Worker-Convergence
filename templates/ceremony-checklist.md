@@ -10,6 +10,8 @@
 
 **β.2 side-branch (default for 2+ workers):** cherry-pick worker commits onto a fresh branch from `origin/main`, push side-branch, ff-merge into main, push, verify with `git merge-base --is-ancestor`.
 
+**Helper:** `templates/scripts/concurrent-beta.sh <worker>` does the β.2 cherry-pick and pushes the side-branch, then stops and proposes a pull request (via `gh` when available). Only `--direct-main` / `PWC_DIRECT_MAIN=1` pushes main, and that fails under branch protection.
+
 **If β.1 fails:** switch to β.2. The fast-path failure is the signal to switch ceremonies, not to force-merge.
 
 Full ceremony in [`PROTOCOL.md`](../PROTOCOL.md). Worked example with collision in [`examples/concurrent-beta-walkthrough.md`](../examples/concurrent-beta-walkthrough.md).
