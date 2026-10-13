@@ -2,45 +2,74 @@
 #
 # concurrent-beta.sh - precision-target side-branch β-merge (Peer-Worker Convergence, β.2)
 #
-# Ships a worker branch's unique commits to canonical main WITHOUT absorbing a
-# concurrent worker's pushed-but-unmerged commits. It does this by cherry-picking
-# the worker's exact commits onto a fresh side-branch rooted at origin/main, then
-# fast-forward-merging that side-branch into main. The side-branch contains only
-# the chosen scope, by construction - so attribution stays exact even when two
-# workers β at roughly the same time.
+# Prepares a worker branch's unique commits for canonical main WITHOUT absorbing a
+# concurrent worker's pushed-but-unmerged commits. It cherry-picks the worker's
+# exact commits onto a fresh side-branch rooted at origin/main and pushes that
+# side-branch. The side-branch contains only the chosen scope, by construction -
+# so attribution stays exact even when two workers β at roughly the same time.
+#
+# DEFAULT: publish the side-branch and stop. Nothing touches local or remote
+# main. If the GitHub CLI (`gh`) is on PATH and origin is a GitHub remote, a pull
+# request is opened and its URL printed; otherwise the exact PR / compare
+# instructions are printed. Landing is then your repository's normal review and
+# merge process, which works under branch protection.
+#
+# OPT-IN: --direct-main (or PWC_DIRECT_MAIN=1) restores the older behaviour:
+# fast-forward local main to the side-branch and `git push origin main`. This
+# FAILS under branch protection / required reviews and publishes without review.
+# Use it only on repositories you control that have no protection on main.
 #
 # This automates the manual ceremony in README.md ("Concurrent-aware β") and
 # PROTOCOL.md. Copy it into your own repo (e.g. as scripts/concurrent-beta.sh)
 # and run it from the canonical clone - the checkout that tracks origin/main.
 #
 # Usage:
-#   ./concurrent-beta.sh <worker> [canonical-branch]
+#   ./concurrent-beta.sh [--direct-main] <worker> [canonical-branch]
 #
 #   <worker>            worker name; the worker branch is "<worker>/main" on origin
 #                       (e.g. "worker1" -> origin/worker1/main)
 #   [canonical-branch]  canonical branch name; defaults to "main"
+#   --direct-main       opt in to pushing main directly (see above)
+#
+# Environment:
+#   PWC_DIRECT_MAIN=1   same as --direct-main
+#   PWC_GH=<command>    the GitHub CLI to use instead of `gh` (default: gh)
 #
 # Example:
 #   ./concurrent-beta.sh worker1
 #
 # Exit codes:
-#   0  success (or nothing to ship)
+#   0  success (or nothing to ship). A missing or failing `gh` is not an error.
 #   1  cherry-pick conflict - resolve by hand (see PROTOCOL.md §Recovery)
 #   2  usage / precondition error
 #
-# Portable to bash 3.2+ (no mapfile). Requires: git.
+# Portable to bash 3.2+ (no mapfile). Requires: git. Optional: gh.
 
 set -euo pipefail
 
-if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ] || [ "$#" -eq 0 ]; then
-  echo "usage: concurrent-beta.sh <worker> [canonical-branch]" >&2
-  [ "$#" -eq 0 ] && exit 2 || exit 0
+USAGE="usage: concurrent-beta.sh [--direct-main] <worker> [canonical-branch]"
+
+DIRECT="${PWC_DIRECT_MAIN:-0}"
+POSITIONAL=()
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) echo "$USAGE" >&2; exit 0 ;;
+    --direct-main) DIRECT=1 ;;
+    -*) echo "error: unknown option: ${arg}" >&2; echo "$USAGE" >&2; exit 2 ;;
+    *) POSITIONAL+=("$arg") ;;
+  esac
+done
+
+if [ "${#POSITIONAL[@]}" -eq 0 ] || [ "${#POSITIONAL[@]}" -gt 2 ]; then
+  echo "$USAGE" >&2
+  exit 2
 fi
 
-WORKER="$1"
-MAIN="${2:-main}"
+WORKER="${POSITIONAL[0]}"
+MAIN="${POSITIONAL[1]:-main}"
 WORKER_REF="${WORKER}/main"
 SIDE="${WORKER}-bundle-$(date +%Y%m%d-%H%M%S)"
+GH_BIN="${PWC_GH:-gh}"
 
 # 0. Refresh canonical truth before measuring anything.
 git fetch origin
@@ -64,8 +93,29 @@ if [ -z "$COMMITS" ]; then
 fi
 
 COUNT="$(printf '%s\n' "$COMMITS" | wc -l | tr -d ' ')"
-echo "Shipping ${COUNT} commit(s) from origin/${WORKER_REF} onto ${MAIN} via ${SIDE}:"
+if [ "$DIRECT" = "1" ]; then
+  echo "Shipping ${COUNT} commit(s) from origin/${WORKER_REF} onto ${MAIN} via ${SIDE} (direct-main mode):"
+else
+  echo "Preparing ${COUNT} commit(s) from origin/${WORKER_REF} for review against ${MAIN} via ${SIDE}:"
+fi
 git log "origin/${MAIN}..origin/${WORKER_REF}" --oneline --reverse
+
+# Remember where we started (branch, or the commit when HEAD is detached) so every
+# exit path after the cherry-picks can put the checkout back. A cherry-pick conflict
+# is deliberately excluded: the recovery steps below resume on the side branch.
+START_BRANCH="$(git symbolic-ref -q --short HEAD || true)"
+START_SHA="$(git rev-parse HEAD)"
+RESTORE=0
+restore_start() {
+  [ "$RESTORE" = "1" ] || return 0
+  RESTORE=0
+  if [ -n "$START_BRANCH" ]; then
+    git checkout -q "$START_BRANCH" >/dev/null 2>&1 || echo "warning: could not return to ${START_BRANCH}" >&2
+  else
+    git checkout -q --detach "$START_SHA" >/dev/null 2>&1 || echo "warning: could not return to ${START_SHA}" >&2
+  fi
+}
+trap restore_start EXIT
 
 # 2. Fresh side-branch from origin/main (NOT from the worker branch). Rooting at
 #    canonical truth is what keeps a concurrent worker's commits out of this scope.
@@ -83,14 +133,64 @@ for sha in $COMMITS; do
   fi
 done
 
-# 4. Push the side-branch, ff-merge into main, push main.
+# From here on, any exit puts the checkout back where it started.
+RESTORE=1
+
+# 4. Push the side-branch.
 git push origin "$SIDE"
-git checkout "$MAIN"
-git merge --ff-only "$SIDE"
-git push origin "$MAIN"
+
+if [ "$DIRECT" = "1" ]; then
+  # 5a. OPT-IN: ff-merge into main and push main. Fails under branch protection.
+  git checkout "$MAIN"
+  git merge --ff-only "$SIDE"
+  git push origin "$MAIN"
+
+  echo ""
+  echo "Done. ${COUNT} commit(s) from ${WORKER_REF} landed on ${MAIN} via ${SIDE} (clean ff-merge, direct-main mode)."
+  echo "Clean up the side-branch when ready:"
+  echo "  git push origin --delete ${SIDE}"
+  echo "  git branch -D ${SIDE}"
+  exit 0
+fi
+
+# 5b. DEFAULT: leave main alone (the EXIT trap restores the starting checkout),
+#     then propose the branch.
+
+# GitHub remote? Read the configured URL (not the rewritten one).
+REMOTE_URL="$(git config --get remote.origin.url || true)"
+GITHUB_SLUG=""
+case "$REMOTE_URL" in
+  *github.com[:/]*)
+    GITHUB_SLUG="$(printf '%s\n' "$REMOTE_URL" | sed -e 's#^.*github\.com[:/]##' -e 's#/*$##' -e 's#\.git$##')"
+    ;;
+esac
 
 echo ""
-echo "Done. ${COUNT} commit(s) from ${WORKER_REF} landed on ${MAIN} via ${SIDE} (clean ff-merge)."
-echo "Clean up the side-branch when ready:"
-echo "  git push origin --delete ${SIDE}"
+echo "Published ${SIDE} (${COUNT} commit(s) from ${WORKER_REF}). ${MAIN} was not changed."
+
+PR_OPENED=0
+if [ -n "$GITHUB_SLUG" ] && command -v "$GH_BIN" >/dev/null 2>&1; then
+  if PR_OUT="$("$GH_BIN" pr create -R "$GITHUB_SLUG" --base "$MAIN" --head "$SIDE" --fill </dev/null 2>&1)"; then
+    PR_OPENED=1
+    echo "Pull request:"
+    printf '%s\n' "$PR_OUT"
+  else
+    echo "note: '${GH_BIN} pr create' failed; open the pull request by hand instead:" >&2
+    printf '%s\n' "$PR_OUT" >&2
+  fi
+fi
+
+if [ "$PR_OPENED" -eq 0 ]; then
+  echo "Next: open a pull request (merge request) with base ${MAIN} and head ${SIDE}."
+  if [ -n "$GITHUB_SLUG" ]; then
+    echo "  https://github.com/${GITHUB_SLUG}/compare/${MAIN}...${SIDE}?expand=1"
+    echo "  or, with the GitHub CLI: gh pr create -R ${GITHUB_SLUG} --base ${MAIN} --head ${SIDE} --fill"
+  else
+    echo "  Use your forge's compare / new pull request page for origin."
+  fi
+fi
+
+echo ""
+echo "After the pull request is merged, clean up:"
+echo "  git push origin --delete ${SIDE}   # skip if your forge deletes merged branches"
 echo "  git branch -D ${SIDE}"

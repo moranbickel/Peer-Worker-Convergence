@@ -18,3 +18,6 @@ jobs:
 
       - name: Gate exit-code contracts
         run: bash tests/gate-contracts.sh
+
+      - name: concurrent-beta helper behaviour
+        run: bash tests/test-concurrent-beta.sh

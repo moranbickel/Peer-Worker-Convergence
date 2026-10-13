@@ -11,9 +11,10 @@
 #   - templates/hooks/no-direct-main-commits.sh  (gamma-enforcer, marker-armed)
 #   - templates/hooks/session-end-check.sh        (beta-enforcer, drift refusal)
 #
-# The session-start tripwire and concurrent-beta script are advisory /
-# ceremony helpers rather than gates; `bash -n` in smoke.sh covers their
-# cheap failure mode, and they are intentionally not pinned here.
+# The session-start tripwire is an advisory helper rather than a gate;
+# `bash -n` in smoke.sh covers its cheap failure mode. The concurrent-beta
+# helper is a ceremony helper, not a gate; its behaviour is covered in
+# tests/test-concurrent-beta.sh.
 #
 # The fixtures are hermetic: they neutralize any global/system git config
 # (GIT_CONFIG_GLOBAL / GIT_CONFIG_NOSYSTEM) so an ambient hooksPath, a
