@@ -15,6 +15,9 @@
 #   e. cherry-pick conflict: exit 1, origin/main unchanged, nothing published
 #   f. the starting checkout (branch or detached commit) is restored when the push
 #      fails and on success; b4: a non-main canonical branch is passed through exactly
+#   g. exit codes: a rejected push is 3 (not 1, which means conflict); a direct-main
+#      step that git refuses (diverged local main, rejected main push) is 4; neither
+#      leaks git's own 128. Conflict recovery text names the branch you started on.
 #   plus: an unknown option is a usage error.
 #
 # Run from anywhere:  bash tests/test-concurrent-beta.sh
@@ -281,7 +284,7 @@ exit 0
 HOOKEOF
 chmod +x "$ORIGIN/hooks/pre-receive"
 run_helper worker1
-[ "$RC" -ne 0 ] && pass "rejected push exits non-zero" || fail "rejected push exits non-zero: $OUT"
+is "rejected push exits 3 (not 1, not git's 128)" "$RC" 3
 is "rejected push: checkout restored to main" "$(current_ref "$CANON")" "main"
 
 new_fixture
@@ -290,6 +293,56 @@ start_sha="$(git -C "$CANON" rev-parse HEAD)"
 run_helper worker1
 is "detached start exits 0" "$RC" 0
 is "detached start: checkout restored to the same commit" "$(current_ref "$CANON")" "DETACHED:$start_sha"
+
+echo "test-concurrent-beta: (g) direct-main failures have their own exit code"
+# Protects: the exit-code contract. 1 means "cherry-pick conflict, resolve by
+# hand"; a wrapper that sees 1 (or a raw 128) for a push or fast-forward refusal
+# would hunt for a conflict that does not exist. Both cases also keep origin/main
+# unchanged and restore the checkout.
+new_fixture
+echo local > "$CANON/local-only.txt"
+git -C "$CANON" add local-only.txt
+git -C "$CANON" commit -q -m "local main diverged from origin/main"
+main_before="$(origin_main)"
+run_helper worker1 --direct-main
+is "diverged local main: exit 4" "$RC" 4
+is "diverged local main: origin/main unchanged" "$(origin_main)" "$main_before"
+is "diverged local main: checkout restored to main" "$(current_ref "$CANON")" "main"
+has "diverged local main: says what failed" "$OUT" "direct-main"
+
+new_fixture
+cat > "$ORIGIN/hooks/pre-receive" <<'HOOKEOF'
+#!/bin/sh
+while read old new ref; do
+  case "$ref" in refs/heads/main) echo "main is protected (test hook)" >&2; exit 1;; esac
+done
+exit 0
+HOOKEOF
+chmod +x "$ORIGIN/hooks/pre-receive"
+main_before="$(origin_main)"
+run_helper worker1 --direct-main
+is "protected main: exit 4" "$RC" 4
+is "protected main: origin/main unchanged" "$(origin_main)" "$main_before"
+[ -n "$(first_side)" ] && pass "protected main: side branch was published" || fail "protected main: side branch was published"
+is "protected main: checkout restored to main" "$(current_ref "$CANON")" "main"
+
+echo "test-concurrent-beta: (e2) conflict recovery names the branch you started on"
+# Protects: the recovery text. It used to say "git checkout main" even when the
+# operator started on another branch, which would strand them on the wrong one.
+new_fixture
+echo "worker edit" > "$WORKER_DIR/shared.txt"
+git -C "$WORKER_DIR" commit -q -am "worker edits shared"
+git -C "$WORKER_DIR" push -q origin worker1/main
+peer="$WORK/peer$N"
+git clone -q "$ORIGIN" "$peer" 2>/dev/null
+echo "peer edit" > "$peer/shared.txt"
+git -C "$peer" commit -q -am "peer edits shared"
+git -C "$peer" push -q origin main
+git -C "$CANON" checkout -q -b dev
+run_helper worker1
+is "conflict from dev exits 1" "$RC" 1
+has "recovery text returns to dev" "$OUT" "git checkout dev &&"
+lacks "recovery text does not send you to main" "$OUT" "git checkout main"
 
 echo "test-concurrent-beta: usage"
 # Protects: a typo such as --direct_main must not be taken as a worker name or

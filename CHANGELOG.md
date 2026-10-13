@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 - **BREAKING:** `templates/scripts/concurrent-beta.sh` now publishes the side-branch and stops by default, opening a pull request when `gh` is available (otherwise printing PR instructions). Exit 0 used to mean "`main` was updated"; it now means "the side-branch was published" and `main` is untouched. It no longer fast-forwards or pushes `main` unless `--direct-main` / `PWC_DIRECT_MAIN=1` is given, because direct publication fails under branch protection. **Migration:** callers that relied on the old behaviour add `--direct-main` (or export `PWC_DIRECT_MAIN=1`); callers that treated exit 0 as "landed" must instead wait for the pull request to merge.
+- Exit codes of `concurrent-beta.sh` are now fully documented: 0 success, 1 cherry-pick conflict, 2 usage or precondition error (including a failed fetch or side-branch checkout), 3 the side-branch push failed, 4 a `--direct-main` step failed (diverged local `main` or rejected push of `main`). Raw git statuses such as 128 no longer leak. The conflict recovery text names the branch you started on instead of always `main`.
 - The helper restores the checkout you started from (branch or detached commit) when the push fails or the run finishes, and pins `gh pr create` to the origin repository with stdin closed.
 - License files: `LICENSE` and `LICENSE-MIT` state they cover `templates/`, `tests/`, `.github/` and code; `LICENSE-CC-BY-4.0` is renamed `LICENSE-docs`; the README lists which paths fall under which license.
 
