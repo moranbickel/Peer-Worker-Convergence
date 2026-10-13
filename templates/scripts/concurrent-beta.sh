@@ -100,8 +100,22 @@ else
 fi
 git log "origin/${MAIN}..origin/${WORKER_REF}" --oneline --reverse
 
-# Remember where we started so default mode can leave the checkout as it found it.
+# Remember where we started (branch, or the commit when HEAD is detached) so every
+# exit path after the cherry-picks can put the checkout back. A cherry-pick conflict
+# is deliberately excluded: the recovery steps below resume on the side branch.
 START_BRANCH="$(git symbolic-ref -q --short HEAD || true)"
+START_SHA="$(git rev-parse HEAD)"
+RESTORE=0
+restore_start() {
+  [ "$RESTORE" = "1" ] || return 0
+  RESTORE=0
+  if [ -n "$START_BRANCH" ]; then
+    git checkout -q "$START_BRANCH" >/dev/null 2>&1 || echo "warning: could not return to ${START_BRANCH}" >&2
+  else
+    git checkout -q --detach "$START_SHA" >/dev/null 2>&1 || echo "warning: could not return to ${START_SHA}" >&2
+  fi
+}
+trap restore_start EXIT
 
 # 2. Fresh side-branch from origin/main (NOT from the worker branch). Rooting at
 #    canonical truth is what keeps a concurrent worker's commits out of this scope.
@@ -118,6 +132,9 @@ for sha in $COMMITS; do
     exit 1
   fi
 done
+
+# From here on, any exit puts the checkout back where it started.
+RESTORE=1
 
 # 4. Push the side-branch.
 git push origin "$SIDE"
@@ -136,10 +153,8 @@ if [ "$DIRECT" = "1" ]; then
   exit 0
 fi
 
-# 5b. DEFAULT: leave main alone. Put the checkout back, then propose the branch.
-if [ -n "$START_BRANCH" ] && [ "$START_BRANCH" != "$SIDE" ]; then
-  git checkout -q "$START_BRANCH"
-fi
+# 5b. DEFAULT: leave main alone (the EXIT trap restores the starting checkout),
+#     then propose the branch.
 
 # GitHub remote? Read the configured URL (not the rewritten one).
 REMOTE_URL="$(git config --get remote.origin.url || true)"
@@ -155,7 +170,7 @@ echo "Published ${SIDE} (${COUNT} commit(s) from ${WORKER_REF}). ${MAIN} was not
 
 PR_OPENED=0
 if [ -n "$GITHUB_SLUG" ] && command -v "$GH_BIN" >/dev/null 2>&1; then
-  if PR_OUT="$("$GH_BIN" pr create --base "$MAIN" --head "$SIDE" --fill 2>&1)"; then
+  if PR_OUT="$("$GH_BIN" pr create -R "$GITHUB_SLUG" --base "$MAIN" --head "$SIDE" --fill </dev/null 2>&1)"; then
     PR_OPENED=1
     echo "Pull request:"
     printf '%s\n' "$PR_OUT"
@@ -169,7 +184,7 @@ if [ "$PR_OPENED" -eq 0 ]; then
   echo "Next: open a pull request (merge request) with base ${MAIN} and head ${SIDE}."
   if [ -n "$GITHUB_SLUG" ]; then
     echo "  https://github.com/${GITHUB_SLUG}/compare/${MAIN}...${SIDE}?expand=1"
-    echo "  or, with the GitHub CLI: gh pr create --base ${MAIN} --head ${SIDE} --fill"
+    echo "  or, with the GitHub CLI: gh pr create -R ${GITHUB_SLUG} --base ${MAIN} --head ${SIDE} --fill"
   else
     echo "  Use your forge's compare / new pull request page for origin."
   fi

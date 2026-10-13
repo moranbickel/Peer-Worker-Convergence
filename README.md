@@ -72,3 +72,6 @@ Maintained by [Moran Bickel](https://github.com/moranbickel).
   `examples/`.
 - [MIT](LICENSE) (same text in `LICENSE-MIT`): everything under `templates/`,
   `tests/` and `.github/`, and any other script or code in this repository.
+
+`CITATION.cff` is citation metadata for the work. Its `license: CC-BY-4.0`
+field describes the prose above; it does not relicense the scripts or code.

@@ -13,6 +13,8 @@
 #   d. origin/main advancing after the worker started: the side branch is rooted
 #      at the NEW origin/main
 #   e. cherry-pick conflict: exit 1, origin/main unchanged, nothing published
+#   f. the starting checkout (branch or detached commit) is restored when the push
+#      fails and on success; b4: a non-main canonical branch is passed through exactly
 #   plus: an unknown option is a usage error.
 #
 # Run from anywhere:  bash tests/test-concurrent-beta.sh
@@ -92,7 +94,23 @@ origin_main() { git -C "$ORIGIN" rev-parse refs/heads/main; }
 first_side() { git -C "$ORIGIN" for-each-ref --format='%(refname:short)' 'refs/heads/worker1-bundle-*' | head -n1; }
 # run_helper <args...> : combined output in $OUT, exit status in $RC
 run_helper() {
-  OUT="$(cd "$CANON" && bash "$HELPER" "$@" 2>&1)"; RC=$?
+  OUT="$(cd "$CANON" && printf 'ANSWER' | bash "$HELPER" "$@" 2>&1)"; RC=$?
+}
+# arg_after <file> <flag> : the line following an exact-match flag line
+arg_after() { awk -v f="$2" 'p {print; exit} $0 == f {p=1}' "$1" 2>/dev/null; }
+# current_ref <repo> : branch name, or "DETACHED:<sha>"
+current_ref() {
+  git -C "$1" symbolic-ref -q --short HEAD || echo "DETACHED:$(git -C "$1" rev-parse HEAD)"
+}
+# write_stub_gh <path> <url> : a gh that records one argument per line plus its stdin
+write_stub_gh() {
+  cat > "$1" <<'STUBEOF'
+#!/usr/bin/env bash
+printf '%s\n' "$@" > "$STUB_ARGS"
+cat > "$STUB_ARGS.stdin"
+echo "$STUB_URL"
+STUBEOF
+  chmod +x "$1"
 }
 
 echo "test-concurrent-beta: (a) default mode publishes the side branch only"
@@ -108,6 +126,7 @@ side="$(first_side)"
 [ -n "$side" ] && pass "side branch exists on origin" || fail "side branch exists on origin: $OUT"
 is "origin/main unchanged" "$(origin_main)" "$main_before"
 is "local main unchanged" "$(git -C "$CANON" rev-parse main)" "$local_main_before"
+is "checkout restored to the starting branch" "$(current_ref "$CANON")" "main"
 is "side branch is exactly origin/main plus 1 commit" \
   "$(git -C "$ORIGIN" rev-list --count "main..${side:-main}")" 1
 git -C "$ORIGIN" cat-file -e "${side:-main}:worker1.txt" 2>/dev/null \
@@ -136,13 +155,15 @@ new_fixture
 pretend_github
 STUB="$WORK/stub-gh$N"
 ARGS="$WORK/gh-args$N"
-printf '#!/usr/bin/env bash\necho "$@" > "%s"\necho "https://github.com/example/repo/pull/7"\n' "$ARGS" > "$STUB"
-chmod +x "$STUB"
+write_stub_gh "$STUB"
+export STUB_ARGS="$ARGS" STUB_URL="https://github.com/example/repo/pull/7"
 PWC_GH="$STUB" run_helper worker1
 is "exits 0 with gh" "$RC" 0
 side="$(first_side)"
-has "gh called with --base main" "$(cat "$ARGS" 2>/dev/null)" "--base main"
-has "gh called with --head <side>" "$(cat "$ARGS" 2>/dev/null)" "--head $side"
+is "gh --base is exactly main" "$(arg_after "$ARGS" --base)" "main"
+is "gh --head is exactly the side branch" "$(arg_after "$ARGS" --head)" "$side"
+is "gh is pinned to the repo with -R" "$(arg_after "$ARGS" -R)" "example/repo"
+is "gh gets no stdin (cannot prompt or hang)" "$(cat "$ARGS.stdin" 2>/dev/null; echo end)" "end"
 has "prints the PR URL" "$OUT" "https://github.com/example/repo/pull/7"
 
 echo "test-concurrent-beta: (b3) gh failing is not fatal"
@@ -227,6 +248,48 @@ git -C "$CANON" for-each-ref --format='%(refname:short)' 'refs/heads/worker1-bun
 run_helper worker1 --direct-main
 is "direct-mode conflict exits 1" "$RC" 1
 is "direct-mode conflict leaves origin/main unchanged" "$(origin_main)" "$main_before"
+
+echo "test-concurrent-beta: (b4) a non-main canonical branch is passed through"
+# Protects: the optional [canonical-branch] argument. Every other case uses main,
+# so a helper that hard-coded main would pass them all.
+new_fixture
+git -C "$WORKER_DIR" push -q origin main:trunk
+pretend_github
+STUB="$WORK/stub-gh$N"
+ARGS="$WORK/gh-args$N"
+write_stub_gh "$STUB"
+export STUB_ARGS="$ARGS" STUB_URL="https://github.com/example/repo/pull/8"
+trunk_before="$(git -C "$ORIGIN" rev-parse trunk)"
+PWC_GH="$STUB" run_helper worker1 trunk
+is "exits 0 with trunk" "$RC" 0
+side="$(first_side)"
+is "gh --base is exactly trunk" "$(arg_after "$ARGS" --base)" "trunk"
+is "side branch is rooted at trunk" "$(git -C "$ORIGIN" rev-parse "${side:-trunk}~1")" "$trunk_before"
+is "trunk unchanged" "$(git -C "$ORIGIN" rev-parse trunk)" "$trunk_before"
+
+echo "test-concurrent-beta: (f) the starting checkout is restored"
+# Protects: the canonical clone is left where the adopter was. Without this, a
+# rejected push (or a detached-HEAD start) silently strands the checkout on the
+# side branch, and the next commit lands there.
+new_fixture
+cat > "$ORIGIN/hooks/pre-receive" <<'HOOKEOF'
+#!/bin/sh
+while read old new ref; do
+  case "$ref" in refs/heads/worker1-bundle-*) echo "rejected by test hook" >&2; exit 1;; esac
+done
+exit 0
+HOOKEOF
+chmod +x "$ORIGIN/hooks/pre-receive"
+run_helper worker1
+[ "$RC" -ne 0 ] && pass "rejected push exits non-zero" || fail "rejected push exits non-zero: $OUT"
+is "rejected push: checkout restored to main" "$(current_ref "$CANON")" "main"
+
+new_fixture
+git -C "$CANON" checkout -q --detach origin/main
+start_sha="$(git -C "$CANON" rev-parse HEAD)"
+run_helper worker1
+is "detached start exits 0" "$RC" 0
+is "detached start: checkout restored to the same commit" "$(current_ref "$CANON")" "DETACHED:$start_sha"
 
 echo "test-concurrent-beta: usage"
 # Protects: a typo such as --direct_main must not be taken as a worker name or
