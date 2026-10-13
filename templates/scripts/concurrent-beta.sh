@@ -41,7 +41,12 @@
 # Exit codes:
 #   0  success (or nothing to ship). A missing or failing `gh` is not an error.
 #   1  cherry-pick conflict - resolve by hand (see PROTOCOL.md §Recovery)
-#   2  usage / precondition error
+#   2  usage / precondition error (includes a failed fetch or side-branch checkout)
+#   3  pushing the side-branch failed (e.g. rejected by the remote)
+#   4  a --direct-main step failed (local main cannot fast-forward, or the push
+#      of main was rejected - always the case under branch protection)
+#   After 3 or 4 the checkout is restored; git's own status (e.g. 128) is never
+#   passed through.
 #
 # Portable to bash 3.2+ (no mapfile). Requires: git. Optional: gh.
 
@@ -72,7 +77,7 @@ SIDE="${WORKER}-bundle-$(date +%Y%m%d-%H%M%S)"
 GH_BIN="${PWC_GH:-gh}"
 
 # 0. Refresh canonical truth before measuring anything.
-git fetch origin
+git fetch origin || { echo "error: git fetch origin failed." >&2; exit 2; }
 
 # Sanity: the worker branch and canonical branch must exist on origin.
 if ! git rev-parse --verify --quiet "origin/${MAIN}" >/dev/null; then
@@ -119,7 +124,7 @@ trap restore_start EXIT
 
 # 2. Fresh side-branch from origin/main (NOT from the worker branch). Rooting at
 #    canonical truth is what keeps a concurrent worker's commits out of this scope.
-git checkout -b "$SIDE" "origin/${MAIN}"
+git checkout -b "$SIDE" "origin/${MAIN}" || { echo "error: could not create ${SIDE} from origin/${MAIN} (uncommitted changes in the way?)." >&2; exit 2; }
 
 # 3. Cherry-pick the worker's commits, in order, onto the side-branch.
 for sha in $COMMITS; do
@@ -127,7 +132,7 @@ for sha in $COMMITS; do
     echo "" >&2
     echo "Cherry-pick conflict on ${sha}." >&2
     echo "Resolve the conflict, then: git cherry-pick --continue" >&2
-    echo "Then finish the ceremony by hand, or: git cherry-pick --abort && git checkout ${MAIN} && git branch -D ${SIDE}" >&2
+    echo "Then finish the ceremony by hand, or: git cherry-pick --abort && git checkout ${START_BRANCH:-$START_SHA} && git branch -D ${SIDE}" >&2
     echo "See PROTOCOL.md §Recovery for shared-file (STATUS_NOW) and SHA-misidentification cases." >&2
     exit 1
   fi
@@ -137,13 +142,15 @@ done
 RESTORE=1
 
 # 4. Push the side-branch.
-git push origin "$SIDE"
+git push origin "$SIDE" || { echo "error: pushing ${SIDE} failed; nothing was published." >&2; exit 3; }
 
 if [ "$DIRECT" = "1" ]; then
   # 5a. OPT-IN: ff-merge into main and push main. Fails under branch protection.
-  git checkout "$MAIN"
-  git merge --ff-only "$SIDE"
-  git push origin "$MAIN"
+  # Any failure here is exit 4: ${SIDE} is already published, ${MAIN} on origin is not changed.
+  DM_FAIL="error: direct-main failed; ${SIDE} is published but origin/${MAIN} was not updated. Open a pull request from ${SIDE} instead."
+  git checkout "$MAIN" || { echo "$DM_FAIL" >&2; exit 4; }
+  git merge --ff-only "$SIDE" || { echo "$DM_FAIL" >&2; exit 4; }
+  git push origin "$MAIN" || { echo "$DM_FAIL" >&2; exit 4; }
 
   echo ""
   echo "Done. ${COUNT} commit(s) from ${WORKER_REF} landed on ${MAIN} via ${SIDE} (clean ff-merge, direct-main mode)."
